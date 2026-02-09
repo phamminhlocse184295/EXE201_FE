@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate, Link } from "react-router-dom";
 import { clearAuth, getUser } from "../services/auth";
 
 export default function AdminLayout() {
@@ -41,17 +41,45 @@ export default function AdminLayout() {
             <span>Users</span>
             <span className="navPill">CRUD</span>
           </NavLink>
+
+          {/* MỚI: Link tới trang quản lý bài tập */}
+          <NavLink
+            to="/exercises"
+            className={({ isActive }) =>
+              isActive ? "navLink active" : "navLink"
+            }
+          >
+            <span>Exercises</span>
+            <span className="navPill">Lib</span>
+          </NavLink>
+
+          <NavLink
+            to="/profile"
+            className={({ isActive }) =>
+              isActive ? "navLink active" : "navLink"
+            }
+          >
+            <span>Profile</span>
+            <span className="navPill">Admin</span>
+          </NavLink>
         </nav>
       </aside>
 
       <div className="main">
         <header className="topbar">
-          <div>
+          <Link
+            to="/profile"
+            style={{
+              textDecoration: "none",
+              color: "inherit",
+              cursor: "pointer",
+            }}
+          >
             <div style={{ fontWeight: 900 }}>Welcome</div>
             <div style={{ fontSize: 12, color: "var(--muted)" }}>
-              {user?.email ? user.email : "Admin"}
+              {user?.full_name ? user.full_name : user?.email || "Admin"}
             </div>
-          </div>
+          </Link>
 
           <button className="btn btnGhost" onClick={logout}>
             Logout

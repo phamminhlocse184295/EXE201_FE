@@ -1,30 +1,39 @@
 import { useEffect, useMemo, useState } from "react";
-import { api } from "../services/api";
+// Import service
+import {
+  getAllUsers,
+  createUser,
+  updateUser,
+  deleteUser,
+} from "../services/userService";
+
+// --- Components phụ ---
 
 function RoleBadge({ role }) {
   const map = {
-    Admin: {
+    admin: {
       bg: "rgba(255,106,0,.12)",
       bd: "rgba(255,106,0,.28)",
       tx: "#C2410C",
     },
-    Manager: {
+    manager: {
       bg: "rgba(124,58,237,.12)",
       bd: "rgba(124,58,237,.28)",
       tx: "#5B21B6",
     },
-    Annotator: {
+    annotator: {
       bg: "rgba(16,185,129,.12)",
       bd: "rgba(16,185,129,.28)",
       tx: "#065F46",
     },
-    Reviewer: {
+    reviewer: {
       bg: "rgba(59,130,246,.12)",
       bd: "rgba(59,130,246,.28)",
       tx: "#1D4ED8",
     },
   };
-  const s = map[role] || {
+  const r = (role || "").toLowerCase();
+  const s = map[r] || {
     bg: "rgba(152,162,179,.16)",
     bd: "rgba(152,162,179,.30)",
     tx: "#344054",
@@ -33,13 +42,14 @@ function RoleBadge({ role }) {
   return (
     <span
       style={{
-        padding: "6px 10px",
-        borderRadius: 999,
-        fontSize: 12,
+        padding: "4px 8px",
+        borderRadius: 99,
+        fontSize: 11,
         border: `1px solid ${s.bd}`,
         background: s.bg,
         color: s.tx,
         fontWeight: 700,
+        textTransform: "capitalize",
       }}
     >
       {role}
@@ -49,59 +59,117 @@ function RoleBadge({ role }) {
 
 function Modal({ open, title, children, onClose }) {
   if (!open) return null;
-
   return (
     <div className="modalOverlay" onMouseDown={onClose}>
-      <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
+      <div
+        className="modal"
+        style={{ width: "650px", maxWidth: "95%" }}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
         <div className="modalHeader">
-          <b style={{ fontSize: 14 }}>{title}</b>
+          <b style={{ fontSize: 16 }}>{title}</b>
           <button
             className="btn"
             onClick={onClose}
-            style={{ padding: "8px 10px" }}
+            style={{ padding: "4px 8px" }}
           >
             ✕
           </button>
         </div>
-        <div className="modalBody">{children}</div>
+        <div
+          className="modalBody"
+          style={{ maxHeight: "85vh", overflowY: "auto" }}
+        >
+          {children}
+        </div>
       </div>
     </div>
   );
 }
 
+// Component input nhỏ để code Form đỡ dài
+const FormGroup = ({ label, children }) => (
+  <div style={{ display: "grid", gap: 4 }}>
+    <label
+      style={{
+        fontSize: 12,
+        fontWeight: 600,
+        color: "var(--muted)",
+        textTransform: "uppercase",
+      }}
+    >
+      {label}
+    </label>
+    {children}
+  </div>
+);
+
+// --- Main Component ---
+
 export default function Users() {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
   const [q, setQ] = useState("");
-
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ name: "", email: "", role: "Annotator" });
 
+  // 1. State Form chứa đầy đủ các trường
+  const [form, setForm] = useState({
+    full_name: "",
+    user_name: "",
+    email: "",
+    role: "annotator",
+    gender: "other",
+    height_cm: "",
+    weight_kg: "",
+    total_practice_minutes: 0,
+    current_point: 0,
+    isActive: true,
+    is_subscriber: false,
+  });
+
+  // 2. Logic Search nâng cao: Tìm cả ID, Username, Email, Tên
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
     if (!s) return users;
-    return users.filter(
-      (u) =>
-        (u.name || "").toLowerCase().includes(s) ||
-        (u.email || "").toLowerCase().includes(s) ||
-        (u.role || "").toLowerCase().includes(s),
-    );
+
+    return users.filter((u) => {
+      const fullName = (u.full_name || u.name || "").toLowerCase();
+      const email = (u.email || "").toLowerCase();
+      const userName = (u.user_name || "").toLowerCase();
+      const role = (u.role || "").toLowerCase();
+      const id = String(u.user_Id || u.id || ""); // Chuyển ID sang chuỗi để tìm
+
+      return (
+        fullName.includes(s) ||
+        email.includes(s) ||
+        userName.includes(s) ||
+        role.includes(s) ||
+        id.includes(s)
+      );
+    });
   }, [users, q]);
 
+  // 3. Fetch Data
   async function fetchUsers() {
     setLoading(true);
     try {
-      // Backend thật: GET /users -> [{id,name,email,role}]
-      const res = await api.get("/users");
-      setUsers(res.data);
-    } catch {
-      // fallback demo
+      const res = await getAllUsers();
+      const data = Array.isArray(res) ? res : res.data || [];
+      setUsers(data);
+    } catch (error) {
+      console.error(error);
+      // Demo data phòng khi lỗi API
       setUsers([
-        { id: 1, name: "Nguyễn Văn A", email: "a@example.com", role: "Admin" },
-        { id: 2, name: "Trần Thị B", email: "b@example.com", role: "Manager" },
-        { id: 3, name: "Lê Văn C", email: "c@example.com", role: "Annotator" },
-        { id: 4, name: "Phạm Thị D", email: "d@example.com", role: "Reviewer" },
+        {
+          user_Id: 58,
+          full_name: "Dương Thái Ngọc dep zai",
+          user_name: "minhloc",
+          email: "admin@gmail.com",
+          role: "admin",
+          isActive: true,
+          total_practice_minutes: 120,
+        },
       ]);
     } finally {
       setLoading(false);
@@ -112,65 +180,77 @@ export default function Users() {
     fetchUsers();
   }, []);
 
+  // 4. Reset form khi tạo mới
   const openCreate = () => {
     setEditing(null);
-    setForm({ name: "", email: "", role: "Annotator" });
+    setForm({
+      full_name: "",
+      user_name: "",
+      email: "",
+      role: "annotator",
+      gender: "other",
+      height_cm: "",
+      weight_kg: "",
+      total_practice_minutes: 0,
+      current_point: 0,
+      isActive: true,
+      is_subscriber: false,
+    });
     setOpen(true);
   };
 
+  // 5. Đổ dữ liệu vào form khi sửa
   const openEdit = (u) => {
     setEditing(u);
     setForm({
-      name: u.name || "",
+      full_name: u.full_name || u.name || "",
+      user_name: u.user_name || "",
       email: u.email || "",
-      role: u.role || "Annotator",
+      role: u.role || "annotator",
+      gender: u.gender || "other",
+      height_cm: u.height_cm || "",
+      weight_kg: u.weight_kg || "",
+      total_practice_minutes: u.total_practice_minutes || 0,
+      current_point: u.current_point || 0,
+      isActive: u.isActive === undefined ? true : u.isActive,
+      is_subscriber: u.is_subscriber || false,
     });
     setOpen(true);
   };
 
   const save = async () => {
-    const payload = { ...form };
-    if (!payload.name.trim() || !payload.email.trim()) {
-      alert("Name và Email không được trống");
+    if (!form.full_name.trim() || !form.email.trim()) {
+      alert("Họ tên và Email là bắt buộc");
       return;
     }
 
     try {
       if (editing) {
-        // PUT /users/:id
-        await api.put(`/users/${editing.id}`, payload);
+        await updateUser(editing.user_Id || editing.id, form);
       } else {
-        // POST /users
-        await api.post("/users", payload);
+        await createUser(form);
       }
       setOpen(false);
       fetchUsers();
-    } catch {
-      // fallback demo: update local state
-      if (editing) {
-        setUsers((prev) =>
-          prev.map((u) => (u.id === editing.id ? { ...u, ...payload } : u)),
-        );
-      } else {
-        setUsers((prev) => [{ id: Date.now(), ...payload }, ...prev]);
-      }
-      setOpen(false);
+    } catch (error) {
+      console.error("Lỗi lưu user:", error);
+      alert("Lỗi khi lưu dữ liệu");
     }
   };
 
   const remove = async (u) => {
-    if (!confirm(`Xoá user "${u.name}"?`)) return;
+    if (!confirm(`Xoá user ${u.full_name}?`)) return;
     try {
-      await api.delete(`/users/${u.id}`);
+      await deleteUser(u.user_Id || u.id);
       fetchUsers();
-    } catch {
-      setUsers((prev) => prev.filter((x) => x.id !== u.id));
+    } catch (error) {
+      alert("Không thể xóa user này");
     }
   };
 
   return (
     <div style={{ display: "grid", gap: 16 }}>
-      {/* Header */}
+      {/* Header & Filter */}
       <div
         style={{
           display: "flex",
@@ -181,41 +261,54 @@ export default function Users() {
         }}
       >
         <div>
-          <h2 style={{ margin: 0, fontWeight: 900 }}>Users</h2>
+          <h2 style={{ margin: 0, fontWeight: 900 }}>Users Management</h2>
           <div style={{ color: "var(--muted)" }}>
-            {loading ? "Loading..." : `${users.length} total users`}
+            {filtered.length !== users.length
+              ? `Found ${filtered.length} results`
+              : `${users.length} members total`}
           </div>
         </div>
-
-        <div
-          style={{
-            display: "flex",
-            gap: 10,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <input
-            className="input"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search name / email / role..."
-            style={{ width: 280 }}
-          />
-
+        <div style={{ display: "flex", gap: 10 }}>
+          {/* Ô Search có nút X */}
+          <div style={{ position: "relative" }}>
+            <input
+              className="input"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search name, email, ID..."
+              style={{ width: 280, paddingRight: 30 }}
+            />
+            {q && (
+              <button
+                onClick={() => setQ("")}
+                style={{
+                  position: "absolute",
+                  right: 8,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  color: "#999",
+                  cursor: "pointer",
+                  fontSize: 16,
+                }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
           <button className="btn btnPrimary" onClick={openCreate}>
-            + New User
+            + Add User
           </button>
         </div>
       </div>
 
-      {/* Board wrapper */}
+      {/* Table */}
       <div className="board">
         <div className="boardHeader">
-          <b>User List</b>
-          <span>{filtered.length} shown</span>
+          <b>All Users</b>
+          <span>{filtered.length} found</span>
         </div>
-
         <div className="boardBody" style={{ padding: 0 }}>
           <div
             className="tableWrap"
@@ -224,129 +317,291 @@ export default function Users() {
             <table>
               <thead>
                 <tr>
-                  <th style={{ width: "28%" }}>Name</th>
-                  <th style={{ width: "34%" }}>Email</th>
-                  <th style={{ width: "18%" }}>Role</th>
-                  <th style={{ width: "20%", textAlign: "right" }}>Actions</th>
+                  <th style={{ width: "30%" }}>User Info</th>
+                  <th style={{ width: "25%" }}>Contact</th>
+                  <th style={{ width: "15%" }}>Stats</th>
+                  <th style={{ width: "15%" }}>Status</th>
+                  <th style={{ width: "15%", textAlign: "right" }}>Action</th>
                 </tr>
               </thead>
-
               <tbody>
-                {filtered.map((u) => (
-                  <tr key={u.id}>
+                {filtered.map((u, i) => (
+                  <tr key={i}>
                     <td>
-                      <div style={{ fontWeight: 800 }}>{u.name}</div>
-                      <div style={{ fontSize: 12, color: "var(--muted)" }}>
-                        ID: {u.id}
+                      <div style={{ fontWeight: 800 }}>
+                        {u.full_name || u.name}
+                      </div>
+                      <div style={{ fontSize: 11, color: "var(--muted)" }}>
+                        ID: #{u.user_Id || u.id} | @{u.user_name || "---"}
                       </div>
                     </td>
-
                     <td>
-                      <div style={{ fontWeight: 700 }}>{u.email}</div>
-                      <div style={{ fontSize: 12, color: "var(--muted)" }}>
-                        Active
+                      <div style={{ fontWeight: 600, fontSize: 13 }}>
+                        {u.email}
                       </div>
                     </td>
-
                     <td>
-                      <RoleBadge role={u.role} />
+                      <div style={{ fontSize: 12 }}>
+                        <b>{u.total_practice_minutes || 0}</b> mins
+                      </div>
+                      <div style={{ fontSize: 11, color: "var(--muted)" }}>
+                        {u.current_point || 0} pts
+                      </div>
                     </td>
-
+                    <td>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 6,
+                          alignItems: "center",
+                        }}
+                      >
+                        <RoleBadge role={u.role} />
+                        {!u.isActive && (
+                          <span
+                            style={{
+                              fontSize: 10,
+                              color: "red",
+                              fontWeight: 700,
+                            }}
+                          >
+                            (Inactive)
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td style={{ textAlign: "right" }}>
                       <button
                         className="btn"
                         onClick={() => openEdit(u)}
-                        style={{ marginRight: 8 }}
+                        style={{ marginRight: 6 }}
                       >
                         Edit
                       </button>
-
                       <button
                         className="btn"
                         onClick={() => remove(u)}
                         style={{
-                          borderColor: "rgba(239,68,68,.28)",
-                          background: "rgba(239,68,68,.08)",
+                          color: "red",
+                          background: "rgba(255,0,0,0.05)",
+                          borderColor: "rgba(255,0,0,0.1)",
                         }}
                       >
-                        Delete
+                        Del
                       </button>
                     </td>
                   </tr>
                 ))}
-
-                {!loading && filtered.length === 0 ? (
+                {filtered.length === 0 && (
                   <tr>
                     <td
-                      colSpan={4}
-                      style={{ padding: 16, color: "var(--muted)" }}
+                      colSpan={5}
+                      style={{
+                        textAlign: "center",
+                        padding: 30,
+                        color: "var(--muted)",
+                      }}
                     >
-                      No users found.
+                      Không tìm thấy kết quả nào.
                     </td>
                   </tr>
-                ) : null}
+                )}
               </tbody>
             </table>
           </div>
         </div>
       </div>
 
-      {/* Modal */}
+      {/* MODAL EDIT FULL FIELDS */}
       <Modal
         open={open}
-        title={editing ? "Edit User" : "Create User"}
+        title={editing ? `Edit User #${editing.user_Id}` : "Create New User"}
         onClose={() => setOpen(false)}
       >
-        <div style={{ display: "grid", gap: 12 }}>
-          <div style={{ display: "grid", gap: 8 }}>
-            <div style={{ fontSize: 12, color: "var(--muted)" }}>Name</div>
-            <input
-              className="input"
-              value={form.name}
-              onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-              placeholder="Enter name..."
-            />
+        <div style={{ display: "grid", gap: 20 }}>
+          {/* Section 1: Thông tin cơ bản */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 16,
+            }}
+          >
+            <FormGroup label="Họ và tên">
+              <input
+                className="input"
+                value={form.full_name}
+                onChange={(e) =>
+                  setForm({ ...form, full_name: e.target.value })
+                }
+                placeholder="VD: Dương Thái Ngọc"
+              />
+            </FormGroup>
+            <FormGroup label="Username">
+              <input
+                className="input"
+                value={form.user_name}
+                onChange={(e) =>
+                  setForm({ ...form, user_name: e.target.value })
+                }
+                placeholder="VD: minhloc"
+              />
+            </FormGroup>
+            <FormGroup label="Email">
+              <input
+                className="input"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                placeholder="admin@gmail.com"
+              />
+            </FormGroup>
+            <FormGroup label="Vai trò">
+              <select
+                className="input"
+                value={form.role}
+                onChange={(e) => setForm({ ...form, role: e.target.value })}
+              >
+                <option value="admin">Admin</option>
+                <option value="manager">Manager</option>
+                <option value="annotator">Annotator</option>
+                <option value="reviewer">Reviewer</option>
+              </select>
+            </FormGroup>
           </div>
 
-          <div style={{ display: "grid", gap: 8 }}>
-            <div style={{ fontSize: 12, color: "var(--muted)" }}>Email</div>
-            <input
-              className="input"
-              value={form.email}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, email: e.target.value }))
-              }
-              placeholder="Enter email..."
-            />
+          <hr style={{ border: 0, borderTop: "1px solid #eee", margin: 0 }} />
+
+          {/* Section 2: Chỉ số cơ thể */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr 1fr",
+              gap: 16,
+            }}
+          >
+            <FormGroup label="Giới tính">
+              <select
+                className="input"
+                value={form.gender}
+                onChange={(e) => setForm({ ...form, gender: e.target.value })}
+              >
+                <option value="male">Nam</option>
+                <option value="female">Nữ</option>
+                <option value="other">Khác</option>
+              </select>
+            </FormGroup>
+            <FormGroup label="Chiều cao (cm)">
+              <input
+                type="number"
+                className="input"
+                value={form.height_cm}
+                onChange={(e) =>
+                  setForm({ ...form, height_cm: e.target.value })
+                }
+                placeholder="0"
+              />
+            </FormGroup>
+            <FormGroup label="Cân nặng (kg)">
+              <input
+                type="number"
+                className="input"
+                value={form.weight_kg}
+                onChange={(e) =>
+                  setForm({ ...form, weight_kg: e.target.value })
+                }
+                placeholder="0"
+              />
+            </FormGroup>
           </div>
 
-          <div style={{ display: "grid", gap: 8 }}>
-            <div style={{ fontSize: 12, color: "var(--muted)" }}>Role</div>
-            <select
-              className="input"
-              value={form.role}
-              onChange={(e) => setForm((p) => ({ ...p, role: e.target.value }))}
+          <hr style={{ border: 0, borderTop: "1px solid #eee", margin: 0 }} />
+
+          {/* Section 3: Chỉ số hệ thống */}
+          <div
+            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}
+          >
+            <FormGroup label="Tổng phút tập">
+              <input
+                type="number"
+                className="input"
+                value={form.total_practice_minutes}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    total_practice_minutes: parseInt(e.target.value) || 0,
+                  })
+                }
+              />
+            </FormGroup>
+            <FormGroup label="Điểm hiện tại">
+              <input
+                type="number"
+                className="input"
+                value={form.current_point}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    current_point: parseInt(e.target.value) || 0,
+                  })
+                }
+              />
+            </FormGroup>
+          </div>
+
+          {/* Section 4: Checkbox */}
+          <div style={{ display: "flex", gap: 24, padding: "8px 0" }}>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                cursor: "pointer",
+                fontWeight: 600,
+              }}
             >
-              <option>Admin</option>
-              <option>Manager</option>
-              <option>Annotator</option>
-              <option>Reviewer</option>
-            </select>
+              <input
+                type="checkbox"
+                checked={form.isActive}
+                onChange={(e) =>
+                  setForm({ ...form, isActive: e.target.checked })
+                }
+              />
+              Kích hoạt (Active)
+            </label>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                cursor: "pointer",
+                fontWeight: 600,
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={form.is_subscriber}
+                onChange={(e) =>
+                  setForm({ ...form, is_subscriber: e.target.checked })
+                }
+              />
+              Đã đăng ký (Subscriber)
+            </label>
           </div>
 
+          {/* Footer */}
           <div
             style={{
               display: "flex",
               justifyContent: "flex-end",
               gap: 10,
-              marginTop: 6,
+              marginTop: 10,
             }}
           >
             <button className="btn" onClick={() => setOpen(false)}>
-              Cancel
+              Huỷ bỏ
             </button>
             <button className="btn btnPrimary" onClick={save}>
-              Save
+              Lưu thay đổi
             </button>
           </div>
         </div>

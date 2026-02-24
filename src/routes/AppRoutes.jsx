@@ -7,6 +7,7 @@ import Dashboard from "../pages/Dashboard.jsx";
 import Users from "../pages/Users.jsx";
 import Profile from "../pages/Profile.jsx"; // 1. Import trang Profile mới tạo
 import Exercises from "../pages/Exercises";
+import Courses from "../pages/Courses";
 
 export default function AppRoutes() {
   return (
@@ -23,6 +24,8 @@ export default function AppRoutes() {
           {/* 2. Thêm route profile tại đây */}
           <Route path="profile" element={<Profile />} />
           <Route path="exercises" element={<Exercises />} />
+
+          <Route path="courses" element={<Courses />} />
         </Route>
       </Route>
 

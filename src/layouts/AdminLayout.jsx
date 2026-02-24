@@ -42,7 +42,6 @@ export default function AdminLayout() {
             <span className="navPill">CRUD</span>
           </NavLink>
 
-          {/* MỚI: Link tới trang quản lý bài tập */}
           <NavLink
             to="/exercises"
             className={({ isActive }) =>
@@ -61,6 +60,17 @@ export default function AdminLayout() {
           >
             <span>Profile</span>
             <span className="navPill">Admin</span>
+          </NavLink>
+
+          {/* ĐÃ SỬA: Đồng bộ style navLink giống các mục trên */}
+          <NavLink
+            to="/courses"
+            className={({ isActive }) =>
+              isActive ? "navLink active" : "navLink"
+            }
+          >
+            <span>Courses</span>
+            <span className="navPill">New</span>
           </NavLink>
         </nav>
       </aside>

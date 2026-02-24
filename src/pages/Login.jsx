@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { login } from "../services/auth"; // Dùng hàm login đã viết ở auth.js
+import { login } from "../services/auth";
 
 export default function Login() {
   const navigate = useNavigate();
-  // Dựa trên ảnh Swagger, API nhận email và password
   const [email, setEmail] = useState("admin@gmail.com");
   const [password, setPassword] = useState("123456");
   const [loading, setLoading] = useState(false);
@@ -19,16 +18,16 @@ export default function Login() {
       // Gọi hàm login từ services/auth.js
       const res = await login({ email, password });
 
-      // Theo cấu trúc ảnh: res có success: true
       if (res.success) {
         navigate("/dashboard");
       } else {
-        setErr(res.message || "Đăng nhập thất bại");
+        setErr(res.message || "Đăng nhập thất bại. Kiểm tra lại thông tin.");
       }
     } catch (error) {
-      // Xử lý lỗi từ server (ví dụ: 400 - Mật khẩu không chính xác)
+      // Bắt chính xác thông báo lỗi từ backend trả về
       const errorMsg =
-        error.response?.data?.message || "Kết nối server thất bại";
+        error.response?.data?.message ||
+        "Kết nối server thất bại. Vui lòng thử lại sau.";
       setErr(errorMsg);
     } finally {
       setLoading(false);
@@ -56,7 +55,7 @@ export default function Login() {
             />
           </div>
 
-          <div>
+          <div style={{ marginTop: "16px" }}>
             <div className="authLabel">Password</div>
             <input
               className="authInput"
@@ -71,13 +70,26 @@ export default function Login() {
           {err ? (
             <div
               className="errorBox"
-              style={{ color: "red", marginBottom: "10px" }}
+              style={{
+                color: "#ef4444",
+                background: "#fee2e2",
+                padding: "10px",
+                borderRadius: "6px",
+                marginTop: "16px",
+                fontSize: "14px",
+                textAlign: "center",
+              }}
             >
               {err}
             </div>
           ) : null}
 
-          <button className="btn btnPrimary" disabled={loading} type="submit">
+          <button
+            className="btn btnPrimary"
+            disabled={loading}
+            type="submit"
+            style={{ width: "100%", marginTop: "24px", padding: "12px" }}
+          >
             {loading ? "Signing in..." : "Login"}
           </button>
         </form>

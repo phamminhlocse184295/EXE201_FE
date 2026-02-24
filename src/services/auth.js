@@ -3,10 +3,10 @@ import api from "./api";
 const TOKEN_KEY = "token";
 const USER_KEY = "user";
 
-// --- 1. Quản lý LocalStorage ---
+// --- 1. LOCAL STORAGE HELPERS ---
 export function setAuth({ token, user }) {
-  localStorage.setItem(TOKEN_KEY, token);
-  localStorage.setItem(USER_KEY, JSON.stringify(user ?? null));
+  if (token) localStorage.setItem(TOKEN_KEY, token);
+  if (user) localStorage.setItem(USER_KEY, JSON.stringify(user));
 }
 
 export function getToken() {
@@ -18,7 +18,6 @@ export function getUser() {
     const user = localStorage.getItem(USER_KEY);
     return user ? JSON.parse(user) : null;
   } catch (error) {
-    console.error("Lỗi parse User từ LocalStorage:", error);
     return null;
   }
 }
@@ -28,28 +27,27 @@ export function clearAuth() {
   localStorage.removeItem(USER_KEY);
 }
 
-// --- 2. Gọi API Authentication ---
+// --- 2. API AUTHENTICATION ---
 
 /**
- * Đăng nhập người dùng
- * Đã sửa endpoint thành /user/signin theo đúng link Azure của bạn
+ * Đăng nhập
  */
 export const login = async (credentials) => {
-  // credentials truyền vào nên là { email, password }
-  const response = await api.post("/user/signin", credentials);
+  const res = await api.post("/users/signin", credentials);
 
-  /**
-   * Dựa trên ảnh Swagger bạn cung cấp:
-   * Dữ liệu trả về có dạng: { success: true, data: { user_Id, ... }, token: "..." }
-   */
-  if (response.success) {
-    setAuth({
-      token: response.token,
-      user: response.data, // response.data chính là Object chứa thông tin user
-    });
+  if (res && res.success) {
+    const token = res.token || res.accessToken || res.data?.token;
+
+    // Logic lấy User: Xử lý cả Object lẫn Array
+    let user = res.data;
+    if (res.data?.data) user = res.data.data; // Trường hợp lồng data.data
+    if (Array.isArray(user)) user = user[0]; // Trường hợp trả về mảng
+
+    if (token) {
+      setAuth({ token, user });
+    }
   }
-
-  return response;
+  return res;
 };
 
 /**
@@ -57,24 +55,56 @@ export const login = async (credentials) => {
  */
 export const logout = () => {
   clearAuth();
-  // Điều hướng về trang login và làm mới trạng thái ứng dụng
   window.location.href = "/login";
 };
 
 /**
- * Kiểm tra xem user có phải Admin không (Dựa trên field 'role' trong ảnh Swagger)
+ * Lấy Profile
+ */
+export const getProfile = async () => {
+  try {
+    const res = await api.get("/users/profile");
+
+    if (res && res.success) {
+      let userData = res.data;
+
+      // Xử lý các trường hợp dị biệt của API
+      if (userData && userData.data) userData = userData.data; // Lồng nhau
+      if (Array.isArray(userData)) userData = userData[0]; // Là Mảng
+
+      // Nếu lấy được data hợp lệ (có id), lưu lại ngay
+      if (userData && (userData.id || userData.user_Id)) {
+        const currentUser = getUser();
+        // Merge với data cũ để tránh mất các trường thiếu
+        const mergedUser = { ...currentUser, ...userData };
+        localStorage.setItem(USER_KEY, JSON.stringify(mergedUser));
+        return mergedUser;
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error("Lỗi getProfile:", error);
+    return null;
+  }
+};
+
+/**
+ * Cập nhật Profile
+ */
+export const updateProfile = async (data) => {
+  const res = await api.patch("/users/update", data);
+
+  if (res && res.success) {
+    // Gọi lại getProfile để đảm bảo data đồng bộ chuẩn nhất từ server
+    await getProfile();
+  }
+  return res;
+};
+
+/**
+ * Check Admin
  */
 export const isAdmin = () => {
   const user = getUser();
-  return user?.role === "admin";
-};
-/**
- * Lấy thông tin chi tiết của User hiện tại
- * Endpoint: /user/profile
- */
-export const getProfile = async () => {
-  const response = await api.get("/user/profile");
-
-  // Dựa trên cấu trúc API bạn cung cấp, dữ liệu user thường nằm trong response.data
-  return response.success ? response.data : null;
+  return user?.role?.toLowerCase() === "admin";
 };

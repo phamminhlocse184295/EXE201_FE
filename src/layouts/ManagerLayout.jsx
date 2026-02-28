@@ -1,10 +1,11 @@
 import { NavLink, Outlet, useNavigate, Link } from "react-router-dom";
 import { clearAuth, getUser } from "../services/auth";
 
-export default function AdminLayout() {
+export default function ManagerLayout() {
   const navigate = useNavigate();
   const user = getUser();
 
+  // Nếu Admin vô tình lọt vào đây (hoặc muốn chặn), có thể chặn ở đây. Tạm thời cứ để render.
   const logout = () => {
     clearAuth();
     navigate("/login");
@@ -14,31 +15,45 @@ export default function AdminLayout() {
     <div className="appShell">
       <aside className="sidebar">
         <div className="brand">
-          {/* Đổi màu badge sang Cam/Vàng cho hợp phong thủy tài lộc */}
-          <div className="brandBadge" style={{ background: "#F59E0B" }} />
+          <div className="brandBadge" style={{ background: "#3B82F6" }} />
           <div className="brandText">
-            <b>FINANCE PANEL</b>
-            <span>EasyStretch Admin</span>
+            <b>CONTENT PANEL</b>
+            <span>EasyStretch Manager</span>
           </div>
         </div>
 
         <nav className="nav">
           <NavLink
-            to="/admin/revenue"
+            to="/manager/dashboard"
             className={({ isActive }) =>
               isActive ? "navLink active" : "navLink"
             }
           >
-            <span>💰 Doanh thu</span>
-            <span className="navPill">Hot</span>
+            <span>📊 Dashboard</span>
           </NavLink>
           <NavLink
-            to="/admin/transactions"
+            to="/manager/users"
             className={({ isActive }) =>
               isActive ? "navLink active" : "navLink"
             }
           >
-            <span>🛒 Lịch sử mua</span>
+            <span>👥 Users</span>
+          </NavLink>
+          <NavLink
+            to="/manager/exercises"
+            className={({ isActive }) =>
+              isActive ? "navLink active" : "navLink"
+            }
+          >
+            <span>🏃 Exercises</span>
+          </NavLink>
+          <NavLink
+            to="/manager/courses"
+            className={({ isActive }) =>
+              isActive ? "navLink active" : "navLink"
+            }
+          >
+            <span>📚 Courses</span>
           </NavLink>
 
           <div
@@ -49,7 +64,7 @@ export default function AdminLayout() {
             }}
           ></div>
           <NavLink
-            to="/admin/profile"
+            to="/manager/profile"
             className={({ isActive }) =>
               isActive ? "navLink active" : "navLink"
             }
@@ -62,12 +77,12 @@ export default function AdminLayout() {
       <div className="main">
         <header className="topbar">
           <Link
-            to="/admin/profile"
+            to="/manager/profile"
             style={{ textDecoration: "none", color: "inherit" }}
           >
             <div style={{ fontWeight: 900 }}>Welcome, {user?.full_name}</div>
-            <div style={{ fontSize: 12, color: "#d97706", fontWeight: 700 }}>
-              Role: Admin
+            <div style={{ fontSize: 12, color: "#2563eb", fontWeight: 700 }}>
+              Role: Manager
             </div>
           </Link>
           <button className="btn btnGhost" onClick={logout}>

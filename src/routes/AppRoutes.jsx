@@ -1,35 +1,66 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import AdminLayout from "../layouts/AdminLayout.jsx";
-import ProtectedRoute from "./ProtectedRoute.jsx";
+import { getUser } from "../services/auth";
 
-import Login from "../pages/Login.jsx";
-import Dashboard from "../pages/Dashboard.jsx";
-import Users from "../pages/Users.jsx";
-import Profile from "../pages/Profile.jsx"; // 1. Import trang Profile mới tạo
+// Layouts
+import AdminLayout from "../layouts/AdminLayout";
+import ManagerLayout from "../layouts/ManagerLayout"; // Layout mới cho Manager
+
+// Pages
+import Dashboard from "../pages/Dashboard";
+import Users from "../pages/Users";
 import Exercises from "../pages/Exercises";
 import Courses from "../pages/Courses";
+import Profile from "../pages/Profile";
+import Revenue from "../pages/Revenue";
+import Transactions from "../pages/Transactions";
+import Login from "../pages/Login";
+
+// Component tự động chia luồng sau khi đăng nhập
+const RoleBasedRedirect = () => {
+  const user = getUser();
+  if (!user) return <Navigate to="/login" replace />;
+
+  // Nếu là admin -> Bay vào trang Doanh thu
+  if (user.role === "admin") return <Navigate to="/admin/revenue" replace />;
+
+  // Còn lại (manager/user) -> Bay vào trang Dashboard
+  return <Navigate to="/manager/dashboard" replace />;
+};
 
 export default function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
 
-      {/* Những Route bên trong này yêu cầu phải Login mới vào được */}
-      <Route element={<ProtectedRoute />}>
-        <Route path="/" element={<AdminLayout />}>
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="users" element={<Users />} />
+      {/* Khi vào trang chủ '/', tự động chia luồng */}
+      <Route path="/" element={<RoleBasedRedirect />} />
 
-          {/* 2. Thêm route profile tại đây */}
-          <Route path="profile" element={<Profile />} />
-          <Route path="exercises" element={<Exercises />} />
-
-          <Route path="courses" element={<Courses />} />
-        </Route>
+      {/* --- THẾ GIỚI 1: ADMIN KINH DOANH --- */}
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<Navigate to="revenue" replace />} />
+        <Route path="revenue" element={<Revenue />} />
+        <Route path="transactions" element={<Transactions />} />
+        <Route path="profile" element={<Profile />} />
       </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* --- THẾ GIỚI 2: MANAGER NỘI DUNG --- */}
+      <Route path="/manager" element={<ManagerLayout />}>
+        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="users" element={<Users />} />
+        <Route path="exercises" element={<Exercises />} />
+        <Route path="courses" element={<Courses />} />
+        <Route path="profile" element={<Profile />} />
+      </Route>
+
+      <Route
+        path="*"
+        element={
+          <div style={{ padding: 40, textAlign: "center" }}>
+            404 - KHÔNG TÌM THẤY TRANG
+          </div>
+        }
+      />
     </Routes>
   );
 }

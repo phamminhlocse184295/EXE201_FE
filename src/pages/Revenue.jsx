@@ -1,47 +1,37 @@
 import { useEffect, useState, useMemo } from "react";
-import {
-  getAllOrders,
-  getTotalRevenue,
-  getDailyRevenue,
-} from "../services/orderService";
+import { getAllOrders } from "../services/orderService";
+// IMPORT THÊM API LẤY KHÓA HỌC ĐỂ TRA GIÁ TIỀN
+import { getAllCourses } from "../services/courseService";
 
 export default function Revenue() {
   const [orders, setOrders] = useState([]);
-  const [stats, setStats] = useState({ total: 0, today: 0 });
+  const [coursesMap, setCoursesMap] = useState({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Lấy ngày hôm nay (YYYY-MM-DD)
-        const today = new Date().toISOString().split("T")[0];
-
-        // GỌI SONG SONG 3 API
-        const [resOrders, resTotalRev, resDailyRev] = await Promise.all([
+        // GỌI SONG SONG 2 API ĐỂ LẤY DATA GỐC
+        const [resOrders, resCourses] = await Promise.all([
           getAllOrders(),
-          getTotalRevenue(),
-          getDailyRevenue(today),
+          getAllCourses(),
         ]);
 
-        // Xử lý danh sách đơn hàng
+        // 1. Xử lý Khóa học thành dạng Từ điển { id: thông_tin } để tra giá
+        const coursesData = Array.isArray(resCourses)
+          ? resCourses
+          : resCourses.data?.data || resCourses.data || [];
+        const cMap = {};
+        coursesData.forEach((c) => {
+          cMap[c.id] = c;
+        });
+        setCoursesMap(cMap);
+
+        // 2. Xử lý Đơn hàng
         const dataOrders = Array.isArray(resOrders)
           ? resOrders
           : resOrders.data?.data || resOrders.data || [];
         setOrders(dataOrders);
-
-        // Xử lý tiền từ API (Đọc theo cấu trúc API trả về)
-        const total =
-          resTotalRev.data?.data ||
-          resTotalRev.data?.revenue ||
-          resTotalRev.data ||
-          0;
-        const daily =
-          resDailyRev.data?.data ||
-          resDailyRev.data?.revenue ||
-          resDailyRev.data ||
-          0;
-
-        setStats({ total: Number(total), today: Number(daily) });
       } catch (error) {
         console.error("Lỗi tải báo cáo:", error);
       } finally {
@@ -51,32 +41,64 @@ export default function Revenue() {
     fetchData();
   }, []);
 
-  // FRONTEND TỰ TÍNH TOP KHÓA HỌC BÁN CHẠY TỪ DANH SÁCH ORDERS
-  const topCourses = useMemo(() => {
-    const courseMap = {};
+  // TỰ ĐỘNG TÍNH TOÁN DOANH THU & TOP KHÓA HỌC BẰNG FRONTEND (CHUẨN 100%)
+  const { totalRevenue, todayRevenue, topCourses } = useMemo(() => {
+    let total = 0;
+    let today = 0;
+    const courseStats = {};
+
+    // Lấy ngày hôm nay chuẩn định dạng (YYYY-MM-DD)
+    const dateToday = new Date().toISOString().split("T")[0];
+
     orders.forEach((o) => {
-      // Chỉ tính các đơn đã thanh toán thành công
       const status = (o.status || "").toUpperCase();
-      if (status === "CANCELED" || status === "FAILED") return;
 
+      // QUAN TRỌNG: Chỉ cộng tiền cho những đơn đã THÀNH CÔNG (SUCCESS hoặc COMPLETED)
+      if (status !== "SUCCESS" && status !== "COMPLETED") return;
+
+      // Tra cứu thông tin khóa học từ coursesMap
+      const matchedCourse = coursesMap[o.course_id] || {};
       const courseName =
-        o.course_name || o.course?.title || "Khóa học chưa rõ tên";
-      const price = Number(o.price || o.total_price || o.course?.price || 0);
+        o.course_name || matchedCourse.title || "Khóa học chưa rõ tên";
+      const price = Number(
+        o.amount || o.price || o.total_price || matchedCourse.price || 0,
+      );
 
-      if (!courseMap[courseName]) {
-        courseMap[courseName] = {
+      // 1. Cộng vào tổng doanh thu
+      total += price;
+
+      // 2. Check xem có phải đơn phát sinh trong hôm nay không
+      if (o.created_at || o.createdAt) {
+        const orderDate = new Date(o.created_at || o.createdAt)
+          .toISOString()
+          .split("T")[0];
+        if (orderDate === dateToday) {
+          today += price;
+        }
+      }
+
+      // 3. Gom nhóm để xếp hạng Top khóa học
+      if (!courseStats[courseName]) {
+        courseStats[courseName] = {
           title: courseName,
           price: price,
           sold: 0,
           revenue: 0,
         };
       }
-      courseMap[courseName].sold += 1;
-      courseMap[courseName].revenue += price;
+      courseStats[courseName].sold += 1;
+      courseStats[courseName].revenue += price;
     });
 
-    return Object.values(courseMap).sort((a, b) => b.revenue - a.revenue);
-  }, [orders]);
+    // Trả về số liệu đã tính toán xong
+    return {
+      totalRevenue: total,
+      todayRevenue: today,
+      topCourses: Object.values(courseStats).sort(
+        (a, b) => b.revenue - a.revenue,
+      ),
+    };
+  }, [orders, coursesMap]);
 
   if (loading)
     return <div style={{ padding: 20 }}>Đang đồng bộ sổ sách...</div>;
@@ -88,7 +110,7 @@ export default function Revenue() {
         <div style={{ color: "var(--muted)" }}>Dành riêng cho Admin</div>
       </div>
 
-      {/* THẺ SỐ LIỆU TỪ API CHUYÊN DỤNG */}
+      {/* THẺ SỐ LIỆU */}
       <div
         style={{
           display: "grid",
@@ -111,7 +133,7 @@ export default function Revenue() {
               marginTop: 8,
             }}
           >
-            {stats.total.toLocaleString()}đ
+            {totalRevenue.toLocaleString()}đ
           </div>
         </div>
         <div
@@ -129,7 +151,7 @@ export default function Revenue() {
               marginTop: 8,
             }}
           >
-            {stats.today.toLocaleString()}đ
+            {todayRevenue.toLocaleString()}đ
           </div>
         </div>
         <div
@@ -158,7 +180,7 @@ export default function Revenue() {
       {/* BẢNG KHÓA HỌC BÁN CHẠY */}
       <div className="board">
         <div className="boardHeader">
-          <b>🏆 Top Khóa Học Bán Chạy Nhất</b>
+          <b>🏆 Top Khóa Học Bán Chạy Nhất (Đã thanh toán)</b>
         </div>
         <div className="boardBody" style={{ padding: 0 }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -236,7 +258,7 @@ export default function Revenue() {
                     colSpan={3}
                     style={{ textAlign: "center", padding: 30, color: "#999" }}
                   >
-                    Chưa có dữ liệu
+                    Chưa có dữ liệu bán hàng thành công
                   </td>
                 </tr>
               )}

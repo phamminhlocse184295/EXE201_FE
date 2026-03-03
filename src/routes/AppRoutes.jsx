@@ -14,6 +14,7 @@ import Profile from "../pages/Profile";
 import Revenue from "../pages/Revenue";
 import Transactions from "../pages/Transactions";
 import Login from "../pages/Login";
+import AiAssistant from "../pages/AiAssistant"; // ĐÃ THÊM: Import trang AI
 
 // Component tự động chia luồng sau khi đăng nhập
 const RoleBasedRedirect = () => {
@@ -51,6 +52,9 @@ export default function AppRoutes() {
         <Route path="exercises" element={<Exercises />} />
         <Route path="courses" element={<Courses />} />
         <Route path="profile" element={<Profile />} />
+
+        {/* ĐÃ THÊM: Route cho trang Trợ lý AI */}
+        <Route path="ai" element={<AiAssistant />} />
       </Route>
 
       <Route

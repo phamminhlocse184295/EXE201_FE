@@ -1,5 +1,7 @@
 import { NavLink, Outlet, useNavigate, Link } from "react-router-dom";
 import { clearAuth, getUser } from "../services/auth";
+// 1. IMPORT WIDGET AI TẠI ĐÂY
+import AiWidget from "../components/AiWidget";
 
 export default function ManagerLayout() {
   const navigate = useNavigate();
@@ -93,6 +95,9 @@ export default function ManagerLayout() {
           <Outlet />
         </div>
       </div>
+
+      {/* 2. NHÚNG BONG BÓNG AI VÀO ĐÂY */}
+      <AiWidget />
     </div>
   );
 }

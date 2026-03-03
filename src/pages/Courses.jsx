@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-// Import đầy đủ các service cần thiết
 import {
   getAllCourses,
   deleteCourse,
@@ -10,11 +9,10 @@ import { getAllExercises } from "../services/exerciseService";
 
 export default function Courses() {
   const [courses, setCourses] = useState([]);
-  const [exercises, setExercises] = useState([]); // Lưu danh sách bài tập để chọn
+  const [exercises, setExercises] = useState([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
 
-  // State quản lý Modal và Form
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState({
@@ -23,24 +21,21 @@ export default function Courses() {
     level: "beginner",
     price: 0,
     img_url: "",
-    days: [], // Chứa danh sách ngày tập
+    days: [],
   });
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Load song song cả Khóa học và Bài tập
       const [resCourses, resExercises] = await Promise.all([
         getAllCourses(),
         getAllExercises(),
       ]);
 
-      // Xử lý data Courses (Mảng trực tiếp)
       setCourses(
         Array.isArray(resCourses) ? resCourses : resCourses.data || [],
       );
 
-      // Xử lý data Exercises để dùng cho dropdown chọn bài tập
       setExercises(
         resExercises.data?.data || resExercises.data || resExercises || [],
       );
@@ -54,8 +49,6 @@ export default function Courses() {
   useEffect(() => {
     fetchData();
   }, []);
-
-  // --- LOGIC XỬ LÝ FORM TẠO MỚI ---
 
   const handleOpenModal = () => {
     setForm({
@@ -83,7 +76,6 @@ export default function Courses() {
   const addExerciseToDay = (dayIndex, exerciseId) => {
     if (!exerciseId) return;
     const updatedDays = [...form.days];
-    // API yêu cầu object { exercise_id: "..." }
     updatedDays[dayIndex].exercises.push({ exercise_id: exerciseId });
     setForm({ ...form, days: updatedDays });
   };
@@ -96,7 +88,7 @@ export default function Courses() {
       if (res) {
         alert("Tạo khóa học thành công!");
         setOpen(false);
-        fetchData(); // Load lại danh sách
+        fetchData();
       }
     } catch (err) {
       alert("Lỗi khi tạo khóa học. Vui lòng kiểm tra lại dữ liệu.");
@@ -105,7 +97,6 @@ export default function Courses() {
     }
   };
 
-  // Bộ lọc tìm kiếm
   const filtered = useMemo(() => {
     return courses.filter((c) =>
       (c.title || "").toLowerCase().includes(q.toLowerCase()),
@@ -161,14 +152,26 @@ export default function Courses() {
                 {filtered.map((c) => (
                   <tr key={c.id}>
                     <td>
+                      {/* ĐÃ SỬA: Bắt lỗi ảnh bằng onError và quét nhiều field */}
                       <img
-                        src={c.img_url || "https://placehold.co/60x40"}
-                        alt={c.title}
+                        src={
+                          c.img_url ||
+                          c.image_url ||
+                          c.image ||
+                          "https://placehold.co/60x40?text=No+Img"
+                        }
+                        alt={c.title || "Course Image"}
                         style={{
                           width: 60,
                           height: 40,
                           borderRadius: 4,
                           objectFit: "cover",
+                          background: "#f1f5f9", // Màu nền nhạt phòng khi ảnh load chậm
+                        }}
+                        onError={(e) => {
+                          e.target.onerror = null; // Ngăn chặn lặp vô hạn nếu ảnh dự phòng cũng lỗi
+                          e.target.src =
+                            "https://placehold.co/60x40?text=Error"; // Ép thay ảnh lỗi
                         }}
                       />
                     </td>
@@ -197,7 +200,7 @@ export default function Courses() {
                     </td>
                     <td>
                       <b style={{ color: "#d97706" }}>
-                        {Number(c.price).toLocaleString()}đ
+                        {Number(c.price || 0).toLocaleString()}đ
                       </b>
                     </td>
                     <td style={{ textAlign: "right" }}>
@@ -210,13 +213,27 @@ export default function Courses() {
                     </td>
                   </tr>
                 ))}
+                {filtered.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      style={{
+                        textAlign: "center",
+                        padding: 30,
+                        color: "#999",
+                      }}
+                    >
+                      Không tìm thấy khóa học nào.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
         </div>
       </div>
 
-      {/* MODAL TẠO MỚI (TỰ ĐỘNG HIỆN KHI BẤM + ADD NEW COURSE) */}
+      {/* MODAL TẠO MỚI */}
       {open && (
         <div
           className="modalOverlay"
@@ -357,7 +374,6 @@ export default function Courses() {
                     {day.title}
                   </div>
 
-                  {/* Dropdown chọn bài tập từ Exercise list */}
                   <select
                     className="input"
                     style={{
@@ -370,7 +386,10 @@ export default function Courses() {
                   >
                     <option value="">-- Chọn bài tập để thêm --</option>
                     {exercises.map((ex) => (
-                      <option key={ex.id} value={ex.id}>
+                      <option
+                        key={ex.id || ex.exercise_id}
+                        value={ex.id || ex.exercise_id}
+                      >
                         {ex.title}
                       </option>
                     ))}
@@ -395,7 +414,7 @@ export default function Courses() {
                           border: "1px solid #ccc",
                         }}
                       >
-                        ID: {ex.exercise_id.substring(0, 8)}...
+                        ID: {String(ex.exercise_id).substring(0, 8)}...
                       </span>
                     ))}
                   </div>

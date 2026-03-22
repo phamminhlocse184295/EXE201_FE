@@ -47,36 +47,46 @@ export default function Login() {
       const res = await login({ email, password });
 
       if (res.success || res.token || res.data?.token || res.access_token || res.data) {
-        // Đọc user object từ localStorage (auth.js đã lưu sau khi gọi login)
-        const userStr = localStorage.getItem("user");
-        let storedUser = null;
-        try { storedUser = userStr ? JSON.parse(userStr) : null; } catch {}
+        // Lấy token từ mọi chỗ có thể
+        const token =
+          res?.token || res?.access_token ||
+          res?.data?.token || res?.data?.data?.token ||
+          localStorage.getItem("token");
 
-        // Lấy role từ nhiều nguồn theo thứ tự ưu tiên
+        // Lấy user object từ response (thử nhiều cấu trúc)
+        let userFromRes =
+          res?.data?.data ||   // {data: {data: {...user...}}}
+          res?.data ||          // {data: {...user...}}
+          res?.user ||          // {user: {...}}
+          null;
+        if (Array.isArray(userFromRes)) userFromRes = userFromRes[0];
+
+        // Đọc user đã có trong localStorage (nếu auth.js kịp lưu)
+        let storedUser = null;
+        try { storedUser = JSON.parse(localStorage.getItem("user") || "null"); } catch {}
+
+        // Merge để không mất trường nào
+        const mergedUser = { ...(storedUser || {}), ...(userFromRes || {}) };
+
+        // Lấy role
         let extractedRole =
-          storedUser?.role ||
-          res?.data?.data?.role ||
-          res?.data?.role ||
+          mergedUser?.role ||
           res?.role ||
           "";
 
-        // Thử decode JWT nếu chưa có role
-        if (!extractedRole) {
-          const token = localStorage.getItem("token");
-          if (token) {
-            try {
-              const payload = JSON.parse(atob(token.split(".")[1]));
-              if (payload?.role) extractedRole = payload.role;
-            } catch {}
-          }
+        // Decode JWT nếu vẫn chưa có role
+        if (!extractedRole && token) {
+          try {
+            const payload = JSON.parse(atob(token.split(".")[1]));
+            if (payload?.role) extractedRole = payload.role;
+          } catch {}
         }
 
         const finalRole = (extractedRole || "manager").toLowerCase();
 
-        // Lưu role đã normalize vào localStorage để guard đọc
-        if (storedUser) {
-          localStorage.setItem("user", JSON.stringify({ ...storedUser, role: finalRole }));
-        }
+        // Luôn lưu user (dù rỗng cũng force lưu role)
+        localStorage.setItem("user", JSON.stringify({ ...mergedUser, role: finalRole }));
+        if (token) localStorage.setItem("token", token);
 
         if (finalRole === "admin") {
           window.location.href = "/admin/revenue";
@@ -92,6 +102,7 @@ export default function Login() {
       setLoading(false);
     }
   };
+
 
   return (
     <>

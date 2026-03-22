@@ -5,32 +5,47 @@ import { getAllUsers } from "../services/userService";
 import { getAllExercises } from "../services/exerciseService";
 import { getAllCourses } from "../services/courseService";
 import { playTick, playSend } from "../lib/sounds";
+import AnimatedCounter from "../components/AnimatedCounter";
+import { FadeIn, ScaleFade } from "../components/Animations";
+import { motion } from "framer-motion";
 
 const PIE_COLORS = ["#00f5ff", "#10B981", "#8B5CF6", "#F59E0B"];
 
-function StatCard({ title, value, sub, color, icon }) {
+function StatCard({ title, value, sub, color, icon, index = 0 }) {
   return (
-    <div style={{ position: "relative", padding: 20, borderRadius: 18, background: "rgba(0,10,20,0.7)", border: "1px solid rgba(0,245,255,0.12)", overflow: "hidden", transition: "all 0.2s", cursor: "default", borderTop: `3px solid ${color}` }}
+    <motion.div
+      initial={{ opacity: 0, y: 24, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ delay: index * 0.1, duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+      style={{ position: "relative", padding: 20, borderRadius: 18, background: "rgba(0,10,20,0.7)", border: "1px solid rgba(0,245,255,0.12)", overflow: "hidden", transition: "all 0.2s", cursor: "default", borderTop: `3px solid ${color}` }}
       onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = `0 0 30px ${color}22, 0 8px 30px rgba(0,0,0,0.4)`; playTick(); }}
-      onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}>
+      onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}
+    >
       <div style={{ position: "absolute", inset: 0, backgroundImage: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,245,255,0.01) 2px,rgba(0,245,255,0.01) 4px)", pointerEvents: "none" }} />
       <div style={{ position: "absolute", bottom: -20, right: -20, width: 80, height: 80, borderRadius: "50%", background: `${color}15`, filter: "blur(16px)", pointerEvents: "none" }} />
       <div style={{ fontSize: 10, color: "rgba(0,245,255,0.5)", letterSpacing: "1.5px", fontFamily: "monospace", fontWeight: 600 }}>{icon} {title}</div>
-      <div style={{ fontSize: 30, fontWeight: 900, color, marginTop: 8, letterSpacing: "-0.5px" }}>{value}</div>
+      <div style={{ fontSize: 30, fontWeight: 900, color, marginTop: 8, letterSpacing: "-0.5px" }}>
+        <AnimatedCounter value={value} duration={1000} />
+      </div>
       <div style={{ fontSize: 11, color: "rgba(0,245,255,0.3)", marginTop: 6, fontFamily: "monospace" }}>{sub}</div>
-    </div>
+    </motion.div>
   );
 }
 
-function Board({ title, right, children }) {
+function Board({ title, right, children, delay = 0 }) {
   return (
-    <div style={{ borderRadius: 18, border: "1px solid rgba(0,245,255,0.12)", background: "rgba(0,10,20,0.7)", overflow: "hidden" }}>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.4, ease: "easeOut" }}
+      style={{ borderRadius: 18, border: "1px solid rgba(0,245,255,0.12)", background: "rgba(0,10,20,0.7)", overflow: "hidden" }}
+    >
       <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(0,245,255,0.08)", background: "rgba(0,245,255,0.02)" }}>
         <span style={{ color: "#00f5ff", fontWeight: 700, fontSize: 14, fontFamily: "monospace", letterSpacing: "1px" }}>{title}</span>
         <span style={{ fontSize: 11, color: "rgba(0,245,255,0.35)", background: "rgba(0,245,255,0.08)", padding: "3px 10px", borderRadius: 999, fontFamily: "monospace" }}>{right}</span>
       </div>
       <div style={{ padding: 20 }}>{children}</div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -86,8 +101,8 @@ export default function Dashboard() {
         @keyframes dashGrid { 0%{background-position:0 0} 100%{background-position:30px 30px} }
       `}</style>
 
-      {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+      <FadeIn>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <div>
           <h2 style={{ margin: 0, fontWeight: 900, fontSize: 24, color: "#00f5ff", fontFamily: "monospace", letterSpacing: "1px" }}>⚡ HỆ THỐNG EASYSTRETCH</h2>
           <div style={{ color: "rgba(0,245,255,0.4)", fontSize: 13, marginTop: 4, fontFamily: "monospace" }}>{loading ? "⏳ SYNCING DATA..." : "📡 Real-time system overview"}</div>
@@ -102,19 +117,20 @@ export default function Dashboard() {
             onMouseLeave={e => e.currentTarget.style.boxShadow = "0 0 20px rgba(0,245,255,0.15)"}
             onClick={() => { playSend(); navigate("/manager/exercises"); }}>+ Thêm Bài Tập</button>
         </div>
+      </FadeIn>
       </div>
 
       {/* Stat Cards */}
       <div style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))" }}>
-        <StatCard icon="👥" title="THÀNH VIÊN" value={stats.totalUsers} sub={`${stats.activeUsers} đang hoạt động`} color="#00f5ff" />
-        <StatCard icon="🏋️" title="BÀI TẬP" value={stats.totalExercises} sub="Trong thư viện" color="#10B981" />
-        <StatCard icon="📚" title="KHÓA HỌC" value={stats.totalCourses} sub="Đang kinh doanh" color="#8B5CF6" />
-        <StatCard icon="💰" title="GIÁ TRỊ KHOÁ" value={`${stats.totalCourseValue.toLocaleString()}đ`} sub="Tổng giá niêm yết" color="#F59E0B" />
+        <StatCard icon="👥" title="THÀNH VIÊN" value={stats.totalUsers} sub={`${stats.activeUsers} đang hoạt động`} color="#00f5ff" index={0} />
+        <StatCard icon="🏋️" title="BÀI TẬP" value={stats.totalExercises} sub="Trong thư viện" color="#10B981" index={1} />
+        <StatCard icon="📚" title="KHÓA HỌC" value={stats.totalCourses} sub="Đang kinh doanh" color="#8B5CF6" index={2} />
+        <StatCard icon="💰" title="GIÁ TRỊ KHOÁ" value={`${stats.totalCourseValue.toLocaleString()}đ`} sub="Tổng giá niêm yết" color="#F59E0B" index={3} />
       </div>
 
       {/* Charts */}
       <div style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fit,minmax(360px,1fr))", alignItems: "start" }}>
-        <Board title="📊 TỈ LỆ DỮ LIỆU" right={`Tổng: ${stats.totalUsers + stats.totalExercises + stats.totalCourses}`}>
+        <Board title="📊 TỈ LỆ DỮ LIỆU" right={`Tổng: ${stats.totalUsers + stats.totalExercises + stats.totalCourses}`} delay={0.5}>
           <div style={{ height: 280 }}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>

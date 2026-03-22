@@ -3,6 +3,9 @@ import { getAllOrders } from "../services/orderService";
 import { getAllCourses } from "../services/courseService";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell } from "recharts";
 import { playTick } from "../lib/sounds";
+import AnimatedCounter from "../components/AnimatedCounter";
+import { FadeIn } from "../components/Animations";
+import { motion } from "framer-motion";
 
 const COLORS = ["#00f5ff", "#6366f1", "#10b981", "#f59e0b", "#f43f5e", "#8b5cf6", "#3b82f6"];
 
@@ -83,10 +86,12 @@ export default function Revenue() {
       `}</style>
 
       {/* Header */}
-      <div>
-        <h2 style={{ margin: 0, fontWeight: 900, fontSize: 24, color: "#00f5ff", fontFamily: "monospace", letterSpacing: "1px" }}>📊 BÁO CÁO DOANH THU</h2>
-        <div style={{ color: "rgba(0,245,255,0.4)", fontSize: 13, marginTop: 4, fontFamily: "monospace" }}>Admin Revenue Analytics — dữ liệu thời thực</div>
-      </div>
+      <FadeIn>
+        <div>
+          <h2 style={{ margin: 0, fontWeight: 900, fontSize: 24, color: "#00f5ff", fontFamily: "monospace", letterSpacing: "1px" }}>📊 BÁO CÁO DOANH THU</h2>
+          <div style={{ color: "rgba(0,245,255,0.4)", fontSize: 13, marginTop: 4, fontFamily: "monospace" }}>Admin Revenue Analytics — dữ liệu thời thực</div>
+        </div>
+      </FadeIn>
 
       {/* KPI Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 14 }}>
@@ -96,14 +101,20 @@ export default function Revenue() {
           { label: "TỔNG LƯỢT MUA", value: orders.length, sub: "Bao gồm đơn chưa xử lý", color: "#F59E0B" },
           { label: "KHÓA HỌC BÁN CHẠY", value: topCourses[0]?.title || "N/A", sub: topCourses[0] ? `${topCourses[0].sold} lượt — ${topCourses[0].revenue.toLocaleString()}đ` : "", color: "#8B5CF6" },
         ].map(({ label, value, sub, color }, i) => (
-          <div key={i} style={darkCard(color)}
+          <motion.div key={i}
+            initial={{ opacity: 0, y: 20, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ delay: i * 0.1, duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+            style={darkCard(color)}
             onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = `0 0 30px ${color}22, 0 8px 30px rgba(0,0,0,0.4)`; playTick(); }}
             onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}>
             <div style={{ position: "absolute", inset: 0, backgroundImage: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,245,255,0.01) 2px,rgba(0,245,255,0.01) 4px)", pointerEvents: "none" }} />
             <div style={{ fontSize: 10, color: "rgba(0,245,255,0.5)", letterSpacing: "1.5px", fontFamily: "monospace", fontWeight: 600 }}>{label}</div>
-            <div style={{ fontSize: typeof value === "string" && value.length > 15 ? 16 : 30, fontWeight: 900, color, marginTop: 8, letterSpacing: "-0.5px" }}>{value}</div>
+            <div style={{ fontSize: typeof value === "string" && value.length > 15 ? 16 : 30, fontWeight: 900, color, marginTop: 8, letterSpacing: "-0.5px" }}>
+              {typeof value === "number" ? <AnimatedCounter value={value} duration={900} /> : value}
+            </div>
             <div style={{ fontSize: 11, color: "rgba(0,245,255,0.3)", marginTop: 4, fontFamily: "monospace" }}>{sub}</div>
-          </div>
+          </motion.div>
         ))}
       </div>
 

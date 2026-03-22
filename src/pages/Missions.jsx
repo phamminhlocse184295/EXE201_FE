@@ -3,6 +3,7 @@ import { getAllMissions, createMission, addExerciseToMission } from "../services
 import { getAllExercises } from "../services/exerciseService";
 
 const darkInput = { width: "100%", padding: "11px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.07)", color: "#fff", fontSize: 13, outline: "none", boxSizing: "border-box" };
+const darkSelect = { ...darkInput, background: "#1e293b", colorScheme: "dark" };
 const thStyle = { padding: "12px 16px", textAlign: "left", fontSize: 11, color: "rgba(255,255,255,0.4)", letterSpacing: "1px", textTransform: "uppercase", borderBottom: "1px solid rgba(255,255,255,0.06)", fontWeight: 600 };
 const tdStyle = { padding: "13px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", fontSize: 13 };
 const levelMeta = { beginner: { bg: "rgba(16,185,129,0.18)", col: "#34d399" }, intermediate: { bg: "rgba(245,158,11,0.18)", col: "#f59e0b" }, advanced: { bg: "rgba(239,68,68,0.18)", col: "#f87171" } };
@@ -139,8 +140,18 @@ export default function Missions() {
         <div style={{ display: "grid", gap: 16 }}>
           <FG label="Tên nhiệm vụ"><input style={darkInput} value={formCreate.title} onChange={e => setFormCreate({ ...formCreate, title: e.target.value })} placeholder="Ví dụ: Nhiệm vụ dãn cơ buổi sáng..." /></FG>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <FG label="Mức độ"><select style={darkInput} value={formCreate.level} onChange={e => setFormCreate({ ...formCreate, level: e.target.value })}><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select></FG>
-            <FG label="Ngày chạy"><input type="date" style={darkInput} value={formCreate.target_date} onChange={e => setFormCreate({ ...formCreate, target_date: e.target.value })} /></FG>
+            <FG label="Mức độ">
+              <select style={darkSelect} value={formCreate.level} onChange={e => setFormCreate({ ...formCreate, level: e.target.value })}>
+                <option value="beginner" style={{ background: "#1e293b" }}>🟢 Beginner</option>
+                <option value="intermediate" style={{ background: "#1e293b" }}>🟡 Intermediate</option>
+                <option value="advanced" style={{ background: "#1e293b" }}>🔴 Advanced</option>
+              </select>
+            </FG>
+            <FG label="Ngày chạy">
+              <input type="date" style={{ ...darkInput, colorScheme: "dark" }} value={formCreate.target_date}
+                min={new Date().toISOString().split("T")[0]}
+                onChange={e => setFormCreate({ ...formCreate, target_date: e.target.value })} />
+            </FG>
           </div>
           <FG label="Mô tả"><textarea style={{ ...darkInput, minHeight: 70, resize: "vertical" }} rows={3} value={formCreate.description} onChange={e => setFormCreate({ ...formCreate, description: e.target.value })} placeholder="Mô tả chi tiết để user dễ hiểu..." /></FG>
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 4 }}>

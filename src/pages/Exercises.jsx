@@ -126,7 +126,18 @@ export default function Exercises() {
       setExercises(data);
     } catch (error) {
       console.error(error);
-      setExercises([]);
+      if (error?.response?.status === 403) {
+        try {
+          const { default: api } = await import("../services/api");
+          const fallbackRes = await api.get("/exercises/client");
+          const fallbackData = Array.isArray(fallbackRes) ? fallbackRes : fallbackRes.data?.data || fallbackRes.data || [];
+          setExercises(fallbackData);
+        } catch (e) {
+          setExercises([]);
+        }
+      } else {
+        setExercises([]);
+      }
     } finally {
       setLoading(false);
     }

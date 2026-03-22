@@ -54,32 +54,38 @@ export default function Dashboard() {
   useEffect(() => {
     let ok = true;
     (async () => {
+      // 1. Fetch Users
       try {
-        const [resUsers, resExercises, resCourses] = await Promise.all([
-          getAllUsers(),
-          getAllExercises(),
-          getAllCourses(),
-        ]);
-
-        if (!ok) return;
-
-        // Xử lý dữ liệu trả về an toàn cho từng loại API
-        const userData = resUsers.data?.data || resUsers.data || resUsers || [];
-        const exData =
-          resExercises.data?.data || resExercises.data || resExercises || [];
-        // Courses thường trả về mảng trực tiếp
-        const courseData = Array.isArray(resCourses)
-          ? resCourses
-          : resCourses.data || [];
-
-        setUsers(userData);
-        setExercises(exData);
-        setCourses(courseData);
-      } catch (error) {
-        console.error("Lỗi tải dashboard:", error);
-      } finally {
-        if (ok) setLoading(false);
+        const resUsers = await getAllUsers();
+        if (ok) setUsers(resUsers.data?.data || resUsers.data || resUsers || []);
+      } catch (err) {
+        console.error("Lỗi tải Users:", err);
       }
+
+      // 2. Fetch Exercises
+      try {
+        const resExercises = await getAllExercises();
+        if (ok) setExercises(resExercises.data?.data || resExercises.data || resExercises || []);
+      } catch (err) {
+        console.error("Lỗi lấy bài tập:", err);
+        if (err?.response?.status === 403) {
+          try {
+            const { default: api } = await import("../services/api");
+            const fallbackRes = await api.get("/exercises/client");
+            if (ok) setExercises(fallbackRes.data?.data || fallbackRes.data || fallbackRes || []);
+          } catch (e) {}
+        }
+      }
+
+      // 3. Fetch Courses
+      try {
+        const resCourses = await getAllCourses();
+        if (ok) setCourses(Array.isArray(resCourses) ? resCourses : resCourses.data || []);
+      } catch (err) {
+        console.error("Lỗi tải Courses:", err);
+      }
+
+      if (ok) setLoading(false);
     })();
     return () => {
       ok = false;

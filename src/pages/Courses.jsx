@@ -26,24 +26,32 @@ export default function Courses() {
 
   const fetchData = async () => {
     setLoading(true);
+
+    // 1. Fetch Courses độc lập
     try {
-      const [resCourses, resExercises] = await Promise.all([
-        getAllCourses(),
-        getAllExercises(),
-      ]);
-
-      setCourses(
-        Array.isArray(resCourses) ? resCourses : resCourses.data || [],
-      );
-
-      setExercises(
-        resExercises.data?.data || resExercises.data || resExercises || [],
-      );
+      const resCourses = await getAllCourses();
+      setCourses(Array.isArray(resCourses) ? resCourses : resCourses.data || []);
     } catch (err) {
-      console.error("Lỗi tải dữ liệu:", err);
-    } finally {
-      setLoading(false);
+      console.error("Lỗi tải Courses:", err);
     }
+
+    // 2. Fetch Exercises độc lập
+    try {
+      const resExercises = await getAllExercises();
+      setExercises(resExercises.data?.data || resExercises.data || resExercises || []);
+    } catch (err) {
+      console.error("Lỗi lấy danh sách bài tập (Role Admin/Manager):", err);
+      if (err?.response?.status === 403) {
+        // Fallback: Nếu 403 thì gọi API danh sách bài tập của User
+        try {
+          const { default: api } = await import("../services/api");
+          const fallbackRes = await api.get("/exercises/client");
+          setExercises(fallbackRes.data?.data || fallbackRes.data || fallbackRes || []);
+        } catch (fallbackErr) {}
+      }
+    }
+
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -62,21 +70,37 @@ export default function Courses() {
     setOpen(true);
   };
 
+  // ĐÃ SỬA: Tự động tính toán Tuần (Cứ 7 ngày nhảy 1 tuần)
   const addDay = () => {
+    const totalDays = form.days.length + 1;
+    // Dùng Math.ceil để làm tròn lên: 1/7 -> Tuần 1, 8/7 -> Tuần 2
+    const calculatedWeek = Math.ceil(totalDays / 7);
+
     const newDay = {
       phase_number: 1,
-      week_number: 1,
-      day_number: form.days.length + 1,
-      title: `Ngày ${form.days.length + 1}, Tuần 1`,
+      week_number: calculatedWeek,
+      day_number: totalDays,
+      title: `Ngày ${totalDays} (Tuần ${calculatedWeek})`,
       exercises: [],
     };
     setForm({ ...form, days: [...form.days, newDay] });
   };
 
-  const addExerciseToDay = (dayIndex, exerciseId) => {
-    if (!exerciseId) return;
+  const addExerciseToDay = (dayIndex) => {
     const updatedDays = [...form.days];
-    updatedDays[dayIndex].exercises.push({ exercise_id: exerciseId });
+    updatedDays[dayIndex].exercises.push({ title: "", video_url: "" });
+    setForm({ ...form, days: updatedDays });
+  };
+
+  const updateExerciseDetail = (dayIndex, exIndex, field, value) => {
+    const updatedDays = [...form.days];
+    updatedDays[dayIndex].exercises[exIndex][field] = value;
+    setForm({ ...form, days: updatedDays });
+  };
+
+  const removeExerciseFromDay = (dayIndex, exIndex) => {
+    const updatedDays = [...form.days];
+    updatedDays[dayIndex].exercises.splice(exIndex, 1);
     setForm({ ...form, days: updatedDays });
   };
 
@@ -152,7 +176,6 @@ export default function Courses() {
                 {filtered.map((c) => (
                   <tr key={c.id}>
                     <td>
-                      {/* ĐÃ SỬA: Bắt lỗi ảnh bằng onError và quét nhiều field */}
                       <img
                         src={
                           c.img_url ||
@@ -166,12 +189,12 @@ export default function Courses() {
                           height: 40,
                           borderRadius: 4,
                           objectFit: "cover",
-                          background: "#f1f5f9", // Màu nền nhạt phòng khi ảnh load chậm
+                          background: "#f1f5f9",
                         }}
                         onError={(e) => {
-                          e.target.onerror = null; // Ngăn chặn lặp vô hạn nếu ảnh dự phòng cũng lỗi
+                          e.target.onerror = null;
                           e.target.src =
-                            "https://placehold.co/60x40?text=Error"; // Ép thay ảnh lỗi
+                            "https://placehold.co/60x40?text=Error";
                         }}
                       />
                     </td>
@@ -335,7 +358,7 @@ export default function Courses() {
               />
             </div>
 
-            {/* QUẢN LÝ LỊCH TẬP (DAYS) */}
+            {/* QUẢN LÝ LỊCH TẬP (DAYS) - NHẬP THỦ CÔNG */}
             <div
               style={{
                 border: "1px solid #eee",
@@ -370,54 +393,96 @@ export default function Courses() {
                     background: "#fff",
                   }}
                 >
-                  <div style={{ fontWeight: 700, fontSize: "13px" }}>
+                  <div
+                    style={{
+                      fontWeight: 700,
+                      fontSize: "13px",
+                      marginBottom: 8,
+                      color: "#2563eb",
+                    }}
+                  >
                     {day.title}
                   </div>
 
-                  <select
-                    className="input"
-                    style={{
-                      marginTop: "8px",
-                      height: "32px",
-                      fontSize: "12px",
-                    }}
-                    onChange={(e) => addExerciseToDay(dIdx, e.target.value)}
-                    value=""
-                  >
-                    <option value="">-- Chọn bài tập để thêm --</option>
-                    {exercises.map((ex) => (
-                      <option
-                        key={ex.id || ex.exercise_id}
-                        value={ex.id || ex.exercise_id}
-                      >
-                        {ex.title}
-                      </option>
-                    ))}
-                  </select>
-
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "6px",
-                      flexWrap: "wrap",
-                      marginTop: "8px",
-                    }}
-                  >
-                    {day.exercises.map((ex, eIdx) => (
-                      <span
-                        key={eIdx}
+                  {/* DANH SÁCH BÀI TẬP BÊN TRONG TỪNG NGÀY */}
+                  {day.exercises.map((ex, eIdx) => (
+                    <div
+                      key={eIdx}
+                      style={{
+                        display: "grid",
+                        gap: 8,
+                        background: "#f8fafc",
+                        padding: 12,
+                        marginTop: 8,
+                        borderRadius: 6,
+                        border: "1px dashed #cbd5e1",
+                      }}
+                    >
+                      <div
                         style={{
-                          fontSize: "10px",
-                          background: "#f0f0f0",
-                          padding: "2px 8px",
-                          borderRadius: "4px",
-                          border: "1px solid #ccc",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
                         }}
                       >
-                        ID: {String(ex.exercise_id).substring(0, 8)}...
-                      </span>
-                    ))}
-                  </div>
+                        <b style={{ fontSize: 12, color: "#475569" }}>
+                          Bài {eIdx + 1}
+                        </b>
+                        <button
+                          onClick={() => removeExerciseFromDay(dIdx, eIdx)}
+                          style={{
+                            color: "#ef4444",
+                            border: "none",
+                            background: "none",
+                            cursor: "pointer",
+                            fontWeight: 900,
+                          }}
+                        >
+                          ✕ Xóa
+                        </button>
+                      </div>
+                      <input
+                        className="input"
+                        placeholder="Tên bài tập..."
+                        value={ex.title}
+                        onChange={(e) =>
+                          updateExerciseDetail(
+                            dIdx,
+                            eIdx,
+                            "title",
+                            e.target.value,
+                          )
+                        }
+                      />
+                      <input
+                        className="input"
+                        placeholder="Link video (Youtube, Google Drive...)"
+                        value={ex.video_url}
+                        onChange={(e) =>
+                          updateExerciseDetail(
+                            dIdx,
+                            eIdx,
+                            "video_url",
+                            e.target.value,
+                          )
+                        }
+                      />
+                    </div>
+                  ))}
+
+                  <button
+                    className="btn"
+                    style={{
+                      marginTop: 12,
+                      background: "#eff6ff",
+                      color: "#2563eb",
+                      border: "1px dashed #bfdbfe",
+                      width: "100%",
+                    }}
+                    onClick={() => addExerciseToDay(dIdx)}
+                  >
+                    + Ghi thêm bài tập thủ công
+                  </button>
                 </div>
               ))}
             </div>

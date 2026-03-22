@@ -57,6 +57,14 @@ export default function ManagerLayout() {
           >
             <span>📚 Courses</span>
           </NavLink>
+          <NavLink
+            to="/manager/missions"
+            className={({ isActive }) =>
+              isActive ? "navLink active" : "navLink"
+            }
+          >
+            <span>🎯 Missions</span>
+          </NavLink>
 
           <div
             style={{
@@ -83,8 +91,8 @@ export default function ManagerLayout() {
             style={{ textDecoration: "none", color: "inherit" }}
           >
             <div style={{ fontWeight: 900 }}>Welcome, {user?.full_name}</div>
-            <div style={{ fontSize: 12, color: "#2563eb", fontWeight: 700 }}>
-              Role: Manager
+            <div style={{ fontSize: 12, color: "#2563eb", fontWeight: 700, textTransform: "capitalize" }}>
+              Role: {user?.role || "Manager"}
             </div>
           </Link>
           <button className="btn btnGhost" onClick={logout}>

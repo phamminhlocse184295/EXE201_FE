@@ -129,6 +129,9 @@ export default function Users() {
       setUsers(data);
     } catch (error) {
       console.error("Lỗi tải users:", error);
+      if (error?.response?.status === 403) {
+        alert("Thông báo hệ thống: Quản lý Users yêu cầu quyền Admin/Manager. Quyền User hiện tại của bạn không được Backend cho phép.");
+      }
     } finally {
       setLoading(false);
     }

@@ -103,22 +103,23 @@ export default function Dashboard() {
 
       <FadeIn>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-        <div>
-          <h2 style={{ margin: 0, fontWeight: 900, fontSize: 24, color: "#00f5ff", fontFamily: "monospace", letterSpacing: "1px" }}>⚡ HỆ THỐNG EASYSTRETCH</h2>
-          <div style={{ color: "rgba(0,245,255,0.4)", fontSize: 13, marginTop: 4, fontFamily: "monospace" }}>{loading ? "⏳ SYNCING DATA..." : "📡 Real-time system overview"}</div>
-        </div>
-        <div style={{ display: "flex", gap: 10 }}>
-          <button style={{ padding: "11px 18px", borderRadius: 12, border: "1px solid rgba(0,245,255,0.2)", background: "rgba(0,245,255,0.06)", color: "#00f5ff", cursor: "pointer", fontSize: 13, fontWeight: 600, fontFamily: "monospace", transition: "all 0.18s" }}
-            onMouseEnter={e => e.currentTarget.style.background = "rgba(0,245,255,0.12)"}
-            onMouseLeave={e => e.currentTarget.style.background = "rgba(0,245,255,0.06)"}
-            onClick={() => { playSend(); navigate("/manager/courses"); }}>Xem Khóa Học</button>
-          <button style={{ padding: "11px 18px", borderRadius: 12, border: "none", background: "linear-gradient(135deg,#00f5ff22,#6366f144)", color: "#00f5ff", cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: "monospace", boxShadow: "0 0 20px rgba(0,245,255,0.15)", transition: "all 0.18s" }}
-            onMouseEnter={e => e.currentTarget.style.boxShadow = "0 0 30px rgba(0,245,255,0.3)"}
-            onMouseLeave={e => e.currentTarget.style.boxShadow = "0 0 20px rgba(0,245,255,0.15)"}
-            onClick={() => { playSend(); navigate("/manager/exercises"); }}>+ Thêm Bài Tập</button>
+          <div>
+            <h2 style={{ margin: 0, fontWeight: 900, fontSize: 24, color: "#00f5ff", fontFamily: "monospace", letterSpacing: "1px" }}>⚡ HỆ THỐNG EASYSTRETCH</h2>
+            <div style={{ color: "rgba(0,245,255,0.4)", fontSize: 13, marginTop: 4, fontFamily: "monospace" }}>{loading ? "⏳ SYNCING DATA..." : "📡 Real-time system overview"}</div>
+          </div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button style={{ padding: "11px 18px", borderRadius: 12, border: "1px solid rgba(0,245,255,0.2)", background: "rgba(0,245,255,0.06)", color: "#00f5ff", cursor: "pointer", fontSize: 13, fontWeight: 600, fontFamily: "monospace", transition: "all 0.18s" }}
+              onMouseEnter={e => e.currentTarget.style.background = "rgba(0,245,255,0.12)"}
+              onMouseLeave={e => e.currentTarget.style.background = "rgba(0,245,255,0.06)"}
+              onClick={() => { playSend(); navigate("/manager/courses"); }}>Xem Khóa Học</button>
+            <button style={{ padding: "11px 18px", borderRadius: 12, border: "none", background: "linear-gradient(135deg,#00f5ff22,#6366f144)", color: "#00f5ff", cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: "monospace", boxShadow: "0 0 20px rgba(0,245,255,0.15)", transition: "all 0.18s" }}
+              onMouseEnter={e => e.currentTarget.style.boxShadow = "0 0 30px rgba(0,245,255,0.3)"}
+              onMouseLeave={e => e.currentTarget.style.boxShadow = "0 0 20px rgba(0,245,255,0.15)"}
+              onClick={() => { playSend(); navigate("/manager/exercises"); }}>+ Thêm Bài Tập</button>
+          </div>
         </div>
       </FadeIn>
-      </div>
+
 
       {/* Stat Cards */}
       <div style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))" }}>

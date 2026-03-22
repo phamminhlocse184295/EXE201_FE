@@ -47,39 +47,42 @@ export default function Login() {
       const res = await login({ email, password });
 
       if (res.success || res.token || res.data?.token || res.access_token || res.data) {
-        let extractedRole = "user";
-
-        if (res?.data?.data?.role) extractedRole = res.data.data.role;
-        else if (res?.data?.role) extractedRole = res.data.role;
-        else if (res?.role) extractedRole = res.role;
-
-        const token =
-          res?.data?.token || res?.token || res?.access_token ||
-          res?.data?.data?.token || localStorage.getItem("token");
-        if (token) {
-          try {
-            const payload = JSON.parse(atob(token.split(".")[1]));
-            if (payload?.role) extractedRole = payload.role;
-          } catch (e) {}
-        }
-
+        // Đọc user object từ localStorage (auth.js đã lưu sau khi gọi login)
         const userStr = localStorage.getItem("user");
-        if (userStr) {
-          try {
-            const parsed = JSON.parse(userStr);
-            if (parsed?.role) extractedRole = parsed.role;
-          } catch (e) {}
+        let storedUser = null;
+        try { storedUser = userStr ? JSON.parse(userStr) : null; } catch {}
+
+        // Lấy role từ nhiều nguồn theo thứ tự ưu tiên
+        let extractedRole =
+          storedUser?.role ||
+          res?.data?.data?.role ||
+          res?.data?.role ||
+          res?.role ||
+          "";
+
+        // Thử decode JWT nếu chưa có role
+        if (!extractedRole) {
+          const token = localStorage.getItem("token");
+          if (token) {
+            try {
+              const payload = JSON.parse(atob(token.split(".")[1]));
+              if (payload?.role) extractedRole = payload.role;
+            } catch {}
+          }
         }
 
-        if (email.toLowerCase() === "trungloc@gmail.com" || email.toLowerCase().includes("admin")) {
-          extractedRole = "admin";
-          const parsed = userStr ? JSON.parse(userStr) : {};
-          localStorage.setItem("user", JSON.stringify({ ...parsed, email, role: "admin" }));
+        const finalRole = (extractedRole || "manager").toLowerCase();
+
+        // Lưu role đã normalize vào localStorage để guard đọc
+        if (storedUser) {
+          localStorage.setItem("user", JSON.stringify({ ...storedUser, role: finalRole }));
         }
 
-        const finalRole = extractedRole.toLowerCase();
-        if (finalRole === "admin") window.location.href = "/admin/revenue";
-        else window.location.href = "/manager/dashboard";
+        if (finalRole === "admin") {
+          window.location.href = "/admin/revenue";
+        } else {
+          window.location.href = "/manager/dashboard";
+        }
       } else {
         setErr(res.message || "Đăng nhập thất bại. Kiểm tra lại thông tin.");
       }

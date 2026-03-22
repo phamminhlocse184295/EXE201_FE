@@ -42,9 +42,8 @@ const ManagerGuard = ({ children }) => {
   const user = getUser();
   if (!user) return <Navigate to="/login" replace />;
   const role = (user.role || "").toLowerCase();
-  // admin, manager, reviewer, annotator đều có quyền vào manager section
-  const allowed = ["admin", "manager", "reviewer", "annotator"];
-  if (!allowed.includes(role)) return <Navigate to="/login" replace />;
+  // chỉ block role 'user' thông thường, còn lại (đã đăng nhập) đều vào được
+  if (role === "user") return <Navigate to="/login" replace />;
   return children;
 };
 

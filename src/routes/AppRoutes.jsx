@@ -21,8 +21,10 @@ import Missions from "../pages/Missions";
 const RoleBasedRedirect = () => {
   const user = getUser();
   if (!user) return <Navigate to="/login" replace />;
-  if (user.role === "admin") return <Navigate to="/admin/revenue" replace />;
-  if (user.role === "manager") return <Navigate to="/manager/dashboard" replace />;
+  const role = (user.role || "").toLowerCase();
+  if (role === "admin") return <Navigate to="/admin/revenue" replace />;
+  if (role === "manager" || role === "reviewer" || role === "annotator")
+    return <Navigate to="/manager/dashboard" replace />;
   // user/unknown → back to login
   return <Navigate to="/login" replace />;
 };
@@ -31,14 +33,18 @@ const RoleBasedRedirect = () => {
 const AdminGuard = ({ children }) => {
   const user = getUser();
   if (!user) return <Navigate to="/login" replace />;
-  if (user.role !== "admin") return <Navigate to="/login" replace />;
+  const role = (user.role || "").toLowerCase();
+  if (role !== "admin") return <Navigate to="/login" replace />;
   return children;
 };
 
 const ManagerGuard = ({ children }) => {
   const user = getUser();
   if (!user) return <Navigate to="/login" replace />;
-  if (user.role !== "manager" && user.role !== "admin") return <Navigate to="/login" replace />;
+  const role = (user.role || "").toLowerCase();
+  // admin, manager, reviewer, annotator đều có quyền vào manager section
+  const allowed = ["admin", "manager", "reviewer", "annotator"];
+  if (!allowed.includes(role)) return <Navigate to="/login" replace />;
   return children;
 };
 

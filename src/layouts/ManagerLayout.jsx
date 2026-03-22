@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate, Link } from "react-router-dom";
 import { clearAuth, getUser } from "../services/auth";
 import AiWidget from "../components/AiWidget";
+import MiniSkeletonPets from "../components/MiniSkeletonPets";
 import PageTransition from "../components/PageTransition";
 import { motion } from "framer-motion";
 
@@ -121,7 +122,7 @@ export default function ManagerLayout() {
           text-transform:uppercase; animation:roleGlow 2s ease-in-out infinite alternate;
         }
         @keyframes roleGlow { 0%{border-color:rgba(59,130,246,0.2)} 100%{border-color:rgba(59,130,246,0.5)} }
-        .mgr-page { padding:24px; background:#0a0f1e; min-height:calc(100vh - 64px); }
+        .mgr-page { padding:24px; background:#0a0f1e; min-height:calc(100vh - 64px); position:relative; }
         .mgr-avatar { transition:all 0.2s; }
         .mgr-avatar:hover { transform:scale(1.1) rotate(5deg); box-shadow:0 0 20px rgba(59,130,246,0.5) !important; }
       `}</style>
@@ -215,6 +216,7 @@ export default function ManagerLayout() {
             </div>
           </motion.header>
           <div className="mgr-page">
+            <MiniSkeletonPets />
             <PageTransition>
               <Outlet />
             </PageTransition>

@@ -18,7 +18,7 @@ export default function PageTransition({ children }) {
         animate="animate"
         exit="exit"
         transition={{ duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] }}
-        style={{ width: "100%", height: "100%" }}
+        style={{ position: "relative", zIndex: 10, width: "100%", height: "100%" }}
       >
         {children}
       </motion.div>

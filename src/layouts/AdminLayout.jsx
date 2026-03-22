@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate, Link } from "react-router-dom";
 import { clearAuth, getUser } from "../services/auth";
+import MiniSkeletonPets from "../components/MiniSkeletonPets";
 import PageTransition from "../components/PageTransition";
 import { motion } from "framer-motion";
 
@@ -119,7 +120,7 @@ export default function AdminLayout() {
           animation:adminRoleGlow 2s ease-in-out infinite alternate;
         }
         @keyframes adminRoleGlow { 0%{border-color:rgba(245,158,11,0.2)} 100%{border-color:rgba(245,158,11,0.6)} }
-        .admin-page { padding:24px; background:#0a0f1e; min-height:calc(100vh - 64px); }
+        .admin-page { padding:24px; background:#0a0f1e; min-height:calc(100vh - 64px); position:relative; }
       `}</style>
 
       <div className="admin-shell">
@@ -199,6 +200,7 @@ export default function AdminLayout() {
             </div>
           </motion.header>
           <div className="admin-page">
+            <MiniSkeletonPets />
             <PageTransition>
               <Outlet />
             </PageTransition>

@@ -1,412 +1,186 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  getAllMissions,
-  createMission,
-  addExerciseToMission,
-} from "../services/missionService";
+import { getAllMissions, createMission, addExerciseToMission } from "../services/missionService";
 import { getAllExercises } from "../services/exerciseService";
+
+const darkInput = { width: "100%", padding: "11px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.07)", color: "#fff", fontSize: 13, outline: "none", boxSizing: "border-box" };
+const thStyle = { padding: "12px 16px", textAlign: "left", fontSize: 11, color: "rgba(255,255,255,0.4)", letterSpacing: "1px", textTransform: "uppercase", borderBottom: "1px solid rgba(255,255,255,0.06)", fontWeight: 600 };
+const tdStyle = { padding: "13px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", fontSize: 13 };
+const levelMeta = { beginner: { bg: "rgba(16,185,129,0.18)", col: "#34d399" }, intermediate: { bg: "rgba(245,158,11,0.18)", col: "#f59e0b" }, advanced: { bg: "rgba(239,68,68,0.18)", col: "#f87171" } };
+const FG = ({ label, children }) => <div style={{ display: "grid", gap: 6 }}><label style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.5px" }}>{label}</label>{children}</div>;
+
+function DarkModal({ open, onClose, title, width = 520, children }) {
+  if (!open) return null;
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "grid", placeItems: "center", zIndex: 100, padding: 16, backdropFilter: "blur(4px)" }}>
+      <div style={{ width: `min(${width}px,95%)`, borderRadius: 20, border: "1px solid rgba(255,255,255,0.12)", background: "#111827", boxShadow: "0 40px 120px rgba(0,0,0,0.5)", overflow: "hidden", maxHeight: "90vh", display: "flex", flexDirection: "column" }}>
+        <div style={{ padding: "16px 22px", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+          <b style={{ color: "#fff", fontSize: 15 }}>{title}</b>
+          <button onClick={onClose} style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, color: "#aaa", cursor: "pointer", padding: "4px 10px", fontSize: 16 }}>✕</button>
+        </div>
+        <div style={{ padding: 22, overflowY: "auto" }}>{children}</div>
+      </div>
+    </div>
+  );
+}
 
 export default function Missions() {
   const [missions, setMissions] = useState([]);
   const [exercises, setExercises] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  // Lọc client side
   const [q, setQ] = useState("");
-  // Lọc server side theo date
   const [filterDate, setFilterDate] = useState("");
-
-  // States cho Tạo nhiệm vụ
   const [openCreate, setOpenCreate] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formCreate, setFormCreate] = useState({
-    title: "",
-    description: "",
-    level: "beginner",
-    target_date: "",
-  });
-
-  // States cho Thêm bài tập vào nhiệm vụ
-  const [targetMissionId, setTargetMissionId] = useState(null); // ID nhiệm vụ đang được chọn
+  const [formCreate, setFormCreate] = useState({ title: "", description: "", level: "beginner", target_date: "" });
+  const [targetMissionId, setTargetMissionId] = useState(null);
   const [openAddEx, setOpenAddEx] = useState(false);
   const [isSubmittingEx, setIsSubmittingEx] = useState(false);
-  // Do API yêu cầu mảng các bài tập
-  const [formAddEx, setFormAddEx] = useState([
-    { exercise_id: "", point: 10 }
-  ]);
+  const [formAddEx, setFormAddEx] = useState([{ exercise_id: "", point: 10 }]);
 
   const fetchData = async () => {
     setLoading(true);
-
-    // 1. Fetch Missions độc lập
     try {
-      const resMissions = await getAllMissions(filterDate || undefined);
-      setMissions(Array.isArray(resMissions) ? resMissions : resMissions.data || []);
+      const r = await getAllMissions(filterDate || undefined);
+      setMissions(Array.isArray(r) ? r : r.data || []);
     } catch (err) {
-      console.error("Lỗi tải dữ liệu Missions:", err);
-      // Nếu là User thường thì backend sẽ trả 403 khi lấy DS Mission
-      if (err?.response?.status === 403) {
-        alert("Thông báo: Tài khoản của bạn là tài khoản User thường, Backend đang chặn (Lỗi 403) không cho phép xem danh sách Nhiệm vụ dành cho Admin/Manager. Bạn cần đăng nhập bằng tài khoản Quản trị để thấy danh sách.");
-      }
+      if (err?.response?.status === 403) alert("Thông báo: Tài khoản này không có quyền xem danh sách Nhiệm vụ.");
     }
-
-    // 2. Fetch Exercises độc lập
     try {
-      const resExercises = await getAllExercises();
-      setExercises(resExercises.data?.data || resExercises.data || resExercises || []);
+      const r = await getAllExercises();
+      setExercises(r.data?.data || r.data || r || []);
     } catch (err) {
-      console.error("Lỗi tải API /exercises (của Admin):", err);
-      if (err.response?.status === 403) {
-        // Fallback sang API của Client dành cho User
-        try {
-          const { default: api } = await import("../services/api");
-          const fallbackRes = await api.get("/exercises/client");
-          setExercises(fallbackRes.data?.data || fallbackRes.data || fallbackRes || []);
-          console.log("Đã fallback lấy danh sách bài tập thành công thông qua API Client!");
-        } catch (fallbackErr) {
-          console.error("Fallback cũng thất bại:", fallbackErr);
-        }
-      }
+      if (err?.response?.status === 403) { try { const { default: api } = await import("../services/api"); const r2 = await api.get("/exercises/client"); setExercises(r2.data?.data || r2.data || r2 || []); } catch {} }
     }
-
     setLoading(false);
   };
+  useEffect(() => { fetchData(); }, [filterDate]);
 
-  useEffect(() => {
-    fetchData();
-  }, [filterDate]); // Gọi lại khi đổi ngày lọc
-
-  // Xử lý Lọc Title trên Client
-  const filtered = useMemo(() => {
-    return missions.filter((m) =>
-      (m.title || "").toLowerCase().includes(q.toLowerCase())
-    );
-  }, [missions, q]);
-
-  // Handle Mở modal tạo Mission
-  const handleOpenCreate = () => {
-    setFormCreate({
-      title: "",
-      description: "",
-      level: "beginner",
-      target_date: new Date().toISOString().split("T")[0], // Mặc định hôm nay
-    });
-    setOpenCreate(true);
-  };
-
+  const filtered = useMemo(() => missions.filter(m => (m.title || "").toLowerCase().includes(q.toLowerCase())), [missions, q]);
+  const handleOpenCreate = () => { setFormCreate({ title: "", description: "", level: "beginner", target_date: new Date().toISOString().split("T")[0] }); setOpenCreate(true); };
   const handleSaveCreate = async () => {
     if (!formCreate.title.trim()) return alert("Vui lòng nhập tên nhiệm vụ");
     if (!formCreate.target_date) return alert("Vui lòng chọn ngày chạy");
-    
     setIsSubmitting(true);
-    try {
-      const res = await createMission(formCreate);
-      if (res) {
-        alert("Tạo nhiệm vụ thành công!");
-        setOpenCreate(false);
-        fetchData(); // reload
-      }
-    } catch (err) {
-      alert("Lỗi khi tạo nhiệm vụ. Vui lòng kiểm tra lại.");
-      console.error(err);
-    } finally {
-      setIsSubmitting(false);
-    }
+    try { await createMission(formCreate); alert("Tạo nhiệm vụ thành công!"); setOpenCreate(false); fetchData(); } catch { alert("Lỗi khi tạo nhiệm vụ."); }
+    setIsSubmitting(false);
   };
-
-  // Handle Mở modal Add Exercise
-  const handleOpenAddEx = (missionId) => {
-    setTargetMissionId(missionId);
-    setFormAddEx([{ exercise_id: "", point: 10 }]);
-    setOpenAddEx(true);
-  };
-
-  // Thay đổi dòng bài tập
-  const updateExForm = (index, field, value) => {
-    const updated = [...formAddEx];
-    updated[index][field] = value;
-    setFormAddEx(updated);
-  };
-
-  const addExRow = () => {
-    setFormAddEx([...formAddEx, { exercise_id: "", point: 10 }]);
-  };
-  
-  const removeExRow = (index) => {
-    const updated = [...formAddEx];
-    updated.splice(index, 1);
-    setFormAddEx(updated);
-  };
-
+  const handleOpenAddEx = (id) => { setTargetMissionId(id); setFormAddEx([{ exercise_id: "", point: 10 }]); setOpenAddEx(true); };
+  const updateExForm = (i, field, value) => { const u = [...formAddEx]; u[i][field] = value; setFormAddEx(u); };
+  const addExRow = () => setFormAddEx([...formAddEx, { exercise_id: "", point: 10 }]);
+  const removeExRow = (i) => { const u = [...formAddEx]; u.splice(i, 1); setFormAddEx(u); };
   const handleSaveAddEx = async () => {
-    // Validate
-    const invalid = formAddEx.find(item => !item.exercise_id);
-    if (invalid) return alert("Vui lòng chọn bài tập cho tất cả các dòng");
+    if (formAddEx.find(r => !r.exercise_id)) return alert("Vui lòng chọn bài tập cho tất cả các dòng");
     if (!targetMissionId) return alert("Không tìm thấy Mission ID");
-
     setIsSubmittingEx(true);
-    try {
-      const payload = { exercises: formAddEx };
-      const res = await addExerciseToMission(targetMissionId, payload);
-      if (res) {
-        alert("Thêm bài tập vào nhiệm vụ thành công!");
-        setOpenAddEx(false);
-        // Có thể reload lại dữ liệu để lấy danh sách exercises mới nhất của mission (nếu API GET missions có trả về)
-        fetchData(); 
-      }
-    } catch (err) {
-      alert("Lỗi khi thêm bài tập. Vui lòng thử lại.");
-    } finally {
-      setIsSubmittingEx(false);
-    }
+    try { await addExerciseToMission(targetMissionId, { exercises: formAddEx }); alert("Thêm bài tập thành công!"); setOpenAddEx(false); fetchData(); } catch { alert("Lỗi khi thêm bài tập."); }
+    setIsSubmittingEx(false);
   };
-
-  if (loading && missions.length === 0) return <div style={{ padding: 20 }}>Đang tải dữ liệu nhiệm vụ...</div>;
 
   return (
-    <div style={{ display: "grid", gap: 16 }}>
-      {/* HEADER */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "end" }}>
+    <div style={{ display: "grid", gap: 18 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <h2 style={{ margin: 0, fontWeight: 900 }}>Quản lý Nhiệm vụ</h2>
-          <div style={{ color: "var(--muted)" }}>Tìm thấy {filtered.length} nhiệm vụ</div>
+          <h2 style={{ margin: 0, fontWeight: 900, fontSize: 24, color: "#fff" }}>🎯 Quản lý Nhiệm vụ</h2>
+          <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, marginTop: 4 }}>Tìm thấy {filtered.length} nhiệm vụ</div>
         </div>
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <div>
-            <label style={{ fontSize: 12, fontWeight: 700, marginRight: 8, color: "#64748b" }}>
-              LỌC NGÀY:
-            </label>
-            <input
-              type="date"
-              className="input"
-              style={{ width: 140 }}
-              value={filterDate}
-              onChange={(e) => setFilterDate(e.target.value)}
-            />
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <label style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.4)", letterSpacing: "0.5px" }}>LỌC NGÀY</label>
+            <input type="date" style={{ ...darkInput, width: 150 }} value={filterDate} onChange={e => setFilterDate(e.target.value)} />
           </div>
-          <input
-            className="input"
-            placeholder="Tìm tên nhiệm vụ..."
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
-          <button className="btn btnPrimary" onClick={handleOpenCreate}>
-            + Tạo nhiệm vụ
-          </button>
+          <div style={{ position: "relative" }}>
+            <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }}>🔍</span>
+            <input style={{ ...darkInput, paddingLeft: 36, width: 200 }} placeholder="Tìm tên nhiệm vụ..." value={q} onChange={e => setQ(e.target.value)} />
+          </div>
+          <button onClick={handleOpenCreate} style={{ padding: "11px 22px", borderRadius: 12, border: "none", background: "linear-gradient(135deg,#3b82f6,#6366f1)", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14, boxShadow: "0 4px 16px rgba(59,130,246,0.3)" }}>+ Tạo nhiệm vụ</button>
         </div>
       </div>
 
-      {/* TABLE */}
-      <div className="board">
-        <div className="boardBody" style={{ padding: 0 }}>
-          <div className="tableWrap">
-            <table>
+      <div style={{ borderRadius: 18, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", overflow: "hidden" }}>
+        {loading && missions.length === 0 ? <div style={{ textAlign: "center", padding: 50, color: "rgba(255,255,255,0.3)" }}>⏳ Đang tải...</div> : (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr>
-                  <th>Tên Nhiệm Vụ</th>
-                  <th>Mức độ</th>
-                  <th>Ngày chạy</th>
-                  <th style={{ textAlign: "right" }}>Thao tác</th>
+                <tr style={{ background: "rgba(255,255,255,0.03)" }}>
+                  <th style={thStyle}>Tên Nhiệm Vụ</th>
+                  <th style={thStyle}>Mức Độ</th>
+                  <th style={thStyle}>Ngày Chạy</th>
+                  <th style={{ ...thStyle, textAlign: "right" }}>Thao Tác</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((m) => (
-                  <tr key={m.id || m._id}>
-                    <td>
-                      <div style={{ fontWeight: 800, color: "#0f172a" }}>{m.title}</div>
-                      <div
-                        style={{
-                          fontSize: 11,
-                          color: "var(--muted)",
-                          maxWidth: "350px",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {m.description}
-                      </div>
-                    </td>
-                    <td>
-                      <span className="badge" style={{ textTransform: "capitalize" }}>
-                        {m.level || "Beginner"}
-                      </span>
-                    </td>
-                    <td>
-                      <b style={{ color: "#2563eb", letterSpacing: 0.5 }}>
-                        {m.target_date || "N/A"}
-                      </b>
-                    </td>
-                    <td style={{ textAlign: "right" }}>
-                      <button 
-                        className="btn" 
-                        style={{ marginRight: 6, color: "#10b981", borderColor: "#10b981" }}
-                        onClick={() => handleOpenAddEx(m.id || m._id)}
-                        title="Gán bài tập cho nhiệm vụ này"
-                      >
-                        + Gán Bài Tập
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {filtered.length === 0 && (
-                  <tr>
-                    <td colSpan={4} style={{ textAlign: "center", padding: 30, color: "#999" }}>
-                      Không tìm thấy nhiệm vụ nào. {filterDate && "Thử bỏ lọc theo ngày để xem tổng hợp."}
-                    </td>
-                  </tr>
-                )}
+                {filtered.map(m => {
+                  const lvl = levelMeta[(m.level || "beginner").toLowerCase()] || levelMeta.beginner;
+                  return (
+                    <tr key={m.id || m._id} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.04)"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                      <td style={tdStyle}>
+                        <div style={{ fontWeight: 700, color: "#fff" }}>{m.title}</div>
+                        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", maxWidth: 350, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.description}</div>
+                      </td>
+                      <td style={tdStyle}><span style={{ padding: "3px 10px", borderRadius: 999, fontSize: 11, background: lvl.bg, color: lvl.col, fontWeight: 700, textTransform: "capitalize" }}>{m.level || "Beginner"}</span></td>
+                      <td style={{ ...tdStyle, color: "#60a5fa", fontWeight: 700 }}>{m.target_date || "N/A"}</td>
+                      <td style={{ ...tdStyle, textAlign: "right" }}>
+                        <button onClick={() => handleOpenAddEx(m.id || m._id)} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid rgba(16,185,129,0.4)", background: "rgba(16,185,129,0.1)", color: "#34d399", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
+                          + Gán Bài Tập
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {filtered.length === 0 && <tr><td colSpan={4} style={{ textAlign: "center", padding: 40, color: "rgba(255,255,255,0.2)" }}>Không tìm thấy nhiệm vụ nào. {filterDate && "Thử bỏ lọc theo ngày."}</td></tr>}
               </tbody>
             </table>
           </div>
-        </div>
+        )}
       </div>
 
-      {/* MODAL TẠO NHIỆM VỤ */}
-      {openCreate && (
-        <div
-          className="modalOverlay"
-          style={{
-            display: "flex", alignItems: "center", justifyContent: "center",
-            background: "rgba(0,0,0,0.5)", position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000,
-          }}
-        >
-          <div className="modal" style={{ background: "#fff", width: "500px", padding: "24px", borderRadius: "8px" }}>
-            <h3 style={{ marginTop: 0 }}>Tạo Nhiệm Vụ Mới</h3>
+      {/* Modal Tạo Nhiệm Vụ */}
+      <DarkModal open={openCreate} onClose={() => setOpenCreate(false)} title="🎯 Tạo Nhiệm Vụ Mới">
+        <div style={{ display: "grid", gap: 16 }}>
+          <FG label="Tên nhiệm vụ"><input style={darkInput} value={formCreate.title} onChange={e => setFormCreate({ ...formCreate, title: e.target.value })} placeholder="Ví dụ: Nhiệm vụ dãn cơ buổi sáng..." /></FG>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <FG label="Mức độ"><select style={darkInput} value={formCreate.level} onChange={e => setFormCreate({ ...formCreate, level: e.target.value })}><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select></FG>
+            <FG label="Ngày chạy"><input type="date" style={darkInput} value={formCreate.target_date} onChange={e => setFormCreate({ ...formCreate, target_date: e.target.value })} /></FG>
+          </div>
+          <FG label="Mô tả"><textarea style={{ ...darkInput, minHeight: 70, resize: "vertical" }} rows={3} value={formCreate.description} onChange={e => setFormCreate({ ...formCreate, description: e.target.value })} placeholder="Mô tả chi tiết để user dễ hiểu..." /></FG>
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 4 }}>
+            <button onClick={() => setOpenCreate(false)} disabled={isSubmitting} style={{ padding: "11px 20px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "rgba(255,255,255,0.6)", cursor: "pointer" }}>Hủy bỏ</button>
+            <button onClick={handleSaveCreate} disabled={isSubmitting} style={{ padding: "11px 24px", borderRadius: 12, border: "none", background: "linear-gradient(135deg,#3b82f6,#6366f1)", color: "#fff", fontWeight: 700, cursor: "pointer", opacity: isSubmitting ? 0.7 : 1 }}>
+              {isSubmitting ? "Đang xử lý..." : "Lưu lại"}
+            </button>
+          </div>
+        </div>
+      </DarkModal>
 
-            <div style={{ marginBottom: "16px" }}>
-              <label style={{ fontSize: "12px", fontWeight: 700 }}>TÊN NHIỆM VỤ</label>
-              <input
-                className="input"
-                value={formCreate.title}
-                onChange={(e) => setFormCreate({ ...formCreate, title: e.target.value })}
-                placeholder="Ví dụ: Nhiệm vụ dãn cơ buổi sáng..."
-              />
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px" }}>
-              <div>
-                <label style={{ fontSize: "12px", fontWeight: 700 }}>MỨC ĐỘ</label>
-                <select
-                  className="input"
-                  value={formCreate.level}
-                  onChange={(e) => setFormCreate({ ...formCreate, level: e.target.value })}
-                >
-                  <option value="beginner">Beginner</option>
-                  <option value="intermediate">Intermediate</option>
-                  <option value="advanced">Advanced</option>
+      {/* Modal Gán Bài Tập */}
+      <DarkModal open={openAddEx} onClose={() => setOpenAddEx(false)} title="➕ Gán Bài Tập Cho Nhiệm Vụ" width={640}>
+        <div style={{ display: "grid", gap: 12 }}>
+          <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.4)" }}>Chọn các bài tập từ hệ thống và điểm thưởng tương ứng</p>
+          {formAddEx.map((row, i) => (
+            <div key={i} style={{ display: "flex", gap: 12, alignItems: "center", background: "rgba(255,255,255,0.04)", padding: 12, borderRadius: 10, border: "1px solid rgba(255,255,255,0.07)" }}>
+              <div style={{ flex: 2 }}>
+                <label style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.4)", letterSpacing: "0.5px" }}>CHỌN BÀI TẬP</label>
+                <select style={{ ...darkInput, marginTop: 4 }} value={row.exercise_id} onChange={e => updateExForm(i, "exercise_id", e.target.value)}>
+                  <option value="">-- Chọn bài tập --</option>
+                  {exercises.map(ex => <option key={ex.id || ex._id} value={ex.id || ex._id}>{ex.title}</option>)}
                 </select>
               </div>
-              <div>
-                <label style={{ fontSize: "12px", fontWeight: 700 }}>NGÀY CHẠY</label>
-                <input
-                  type="date"
-                  className="input"
-                  value={formCreate.target_date}
-                  onChange={(e) => setFormCreate({ ...formCreate, target_date: e.target.value })}
-                />
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.4)", letterSpacing: "0.5px" }}>ĐIỂM THƯỞNG</label>
+                <input type="number" style={{ ...darkInput, marginTop: 4 }} value={row.point} onChange={e => updateExForm(i, "point", Number(e.target.value))} min={0} />
               </div>
+              <button onClick={() => removeExRow(i)} style={{ marginTop: 18, color: "#f87171", border: "none", background: "none", cursor: "pointer", fontWeight: 900, padding: "0 8px", fontSize: 18 }}>✕</button>
             </div>
-
-            <div style={{ marginBottom: "16px" }}>
-              <label style={{ fontSize: "12px", fontWeight: 700 }}>MÔ TẢ</label>
-              <textarea
-                className="input"
-                rows={3}
-                value={formCreate.description}
-                onChange={(e) => setFormCreate({ ...formCreate, description: e.target.value })}
-                placeholder="Mô tả chi tiết để user dễ hiểu..."
-              />
-            </div>
-
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "24px" }}>
-              <button className="btn" onClick={() => setOpenCreate(false)} disabled={isSubmitting}>
-                Hủy bỏ
-              </button>
-              <button className="btn btnPrimary" onClick={handleSaveCreate} disabled={isSubmitting}>
-                {isSubmitting ? "Đang xử lý..." : "Lưu lại"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL GÁN BÀI TẬP */}
-      {openAddEx && (
-        <div
-          className="modalOverlay"
-          style={{
-            display: "flex", alignItems: "center", justifyContent: "center",
-            background: "rgba(0,0,0,0.5)", position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000,
-          }}
-        >
-          <div className="modal" style={{ background: "#fff", width: "600px", maxHeight: "80vh", overflowY: "auto", padding: "24px", borderRadius: "8px" }}>
-            <h3 style={{ marginTop: 0 }}>Gán Bài Tập Cho Nhiệm Vụ</h3>
-            <p style={{ fontSize: 13, color: "#64748b", marginBottom: 20 }}>
-              Chọn các bài tập từ hệ thống và điểm thưởng tương ứng
-            </p>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {formAddEx.map((row, index) => (
-                <div key={index} style={{ display: "flex", gap: 12, alignItems: "center", background: "#f8fafc", padding: 12, borderRadius: 6, border: "1px dashed #cbd5e1" }}>
-                  <div style={{ flex: 2 }}>
-                    <label style={{ fontSize: 11, fontWeight: 700, color: "#475569" }}>CHỌN BÀI TẬP</label>
-                    <select
-                      className="input"
-                      value={row.exercise_id}
-                      onChange={(e) => updateExForm(index, "exercise_id", e.target.value)}
-                    >
-                      <option value="">-- Chọn bài tập --</option>
-                      {exercises.map((ex) => (
-                        <option key={ex.id || ex._id} value={ex.id || ex._id}>
-                          {ex.title}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: 11, fontWeight: 700, color: "#475569" }}>ĐIỂM THƯỞNG</label>
-                    <input
-                      type="number"
-                      className="input"
-                      value={row.point}
-                      onChange={(e) => updateExForm(index, "point", Number(e.target.value))}
-                      min={0}
-                    />
-                  </div>
-                  <div style={{ paddingTop: 16 }}>
-                    <button
-                      className="btn"
-                      style={{ color: "red", border: "none", background: "none", cursor: "pointer", padding: "0 8px" }}
-                      onClick={() => removeExRow(index)}
-                      title="Xóa dòng này"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <button
-              className="btn"
-              style={{ marginTop: 16, width: "100%", border: "1px dashed #3b82f6", color: "#3b82f6", background: "#eff6ff" }}
-              onClick={addExRow}
-            >
-              + Gán thêm dòng bài tập
+          ))}
+          <button onClick={addExRow} style={{ padding: "10px", borderRadius: 10, border: "1px dashed rgba(59,130,246,0.4)", background: "rgba(59,130,246,0.08)", color: "#60a5fa", cursor: "pointer", fontSize: 13, fontWeight: 700 }}>+ Gán thêm dòng bài tập</button>
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 4 }}>
+            <button onClick={() => setOpenAddEx(false)} disabled={isSubmittingEx} style={{ padding: "11px 20px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "rgba(255,255,255,0.6)", cursor: "pointer" }}>Hủy bỏ</button>
+            <button onClick={handleSaveAddEx} disabled={isSubmittingEx} style={{ padding: "11px 24px", borderRadius: 12, border: "none", background: "linear-gradient(135deg,#10b981,#059669)", color: "#fff", fontWeight: 700, cursor: "pointer", opacity: isSubmittingEx ? 0.7 : 1 }}>
+              {isSubmittingEx ? "Đang xử lý..." : "Xác nhận gán bài"}
             </button>
-
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "24px" }}>
-              <button className="btn" onClick={() => setOpenAddEx(false)} disabled={isSubmittingEx}>
-                Hủy bỏ
-              </button>
-              <button className="btn btnPrimary" onClick={handleSaveAddEx} disabled={isSubmittingEx}>
-                {isSubmittingEx ? "Đang xử lý..." : "Xác nhận gán bài"}
-              </button>
-            </div>
           </div>
         </div>
-      )}
+      </DarkModal>
     </div>
   );
 }

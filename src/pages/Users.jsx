@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { getAllUsers, createUser, updateUser, banUser, unbanUser } from "../services/userService";
+import { playTick, playSend } from "../lib/sounds";
 
 // ── Shared Styles ──
 const darkInput = {
@@ -7,8 +8,8 @@ const darkInput = {
   border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.07)",
   color: "#fff", fontSize: 13, outline: "none", boxSizing: "border-box",
 };
-const thStyle = { padding: "12px 16px", textAlign: "left", fontSize: 11, color: "rgba(255,255,255,0.4)", letterSpacing: "1px", textTransform: "uppercase", borderBottom: "1px solid rgba(255,255,255,0.06)", fontWeight: 600 };
-const tdStyle = { padding: "13px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", fontSize: 13 };
+const thStyle = { padding: "12px 16px", textAlign: "left", fontSize: 10, color: "rgba(0,245,255,0.5)", letterSpacing: "1.5px", textTransform: "uppercase", borderBottom: "1px solid rgba(0,245,255,0.08)", fontWeight: 600, fontFamily: "monospace" };
+const tdStyle = { padding: "13px 16px", borderBottom: "1px solid rgba(0,245,255,0.05)", fontSize: 13 };
 
 function RoleBadge({ role }) {
   const map = {

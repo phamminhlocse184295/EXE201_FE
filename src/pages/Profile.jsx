@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getProfile, getUser, updateProfile } from "../services/auth";
+import { playTick, playSend } from "../lib/sounds";
 
 const iStyle = {
   width: "100%", padding: "12px 16px", borderRadius: 12,
-  border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.07)",
+  border: "1px solid rgba(0,245,255,0.15)", background: "rgba(0,10,20,0.6)",
   color: "#fff", fontSize: 14, outline: "none",
   transition: "border 0.2s, box-shadow 0.2s", boxSizing: "border-box",
 };

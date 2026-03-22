@@ -83,10 +83,9 @@ export default function AiAssistant() {
     try {
       const res = await askAiQuestion(userMsg);
       const botReply = res.data?.answer || res.answer || "NEURAL NETWORK ERROR — Không thể tìm thấy câu trả lời.";
-      const queryUsed = res.data?.query_used || res.query_used || "";
       playReceive();
       const bid = msgIdRef.current++;
-      setMessages(prev => [...prev, { sender: "bot", text: botReply, queryInfo: queryUsed, id: bid, typed: false, time: new Date() }]);
+      setMessages(prev => [...prev, { sender: "bot", text: botReply, id: bid, typed: false, time: new Date() }]);
     } catch {
       playReceive();
       const bid = msgIdRef.current++;
@@ -169,12 +168,6 @@ export default function AiAssistant() {
                   {msg.sender === "bot" && !msg.typed
                     ? <TypewriterText text={msg.text} speed={14} onDone={() => markTyped(msg.id)} />
                     : msg.text}
-                  {msg.queryInfo && (
-                    <div style={{ marginTop: 10, padding: "8px 12px", background: "rgba(0,0,0,0.4)", borderRadius: 8, borderLeft: "2px solid #00f5ff44" }}>
-                      <div style={{ fontSize: 9, color: "rgba(0,245,255,0.5)", letterSpacing: "1px", marginBottom: 4 }}>▸ SQL QUERY EXECUTED</div>
-                      <code style={{ fontSize: 11, color: "#00f5ff77", fontFamily: "monospace" }}>{msg.queryInfo}</code>
-                    </div>
-                  )}
                 </div>
               </div>
               {msg.sender === "user" && (

@@ -1,9 +1,10 @@
 import { useEffect, useState, useMemo } from "react";
 import { getAllOrders, updateOrderStatus } from "../services/orderService";
 import { getAllCourses } from "../services/courseService";
+import { playTick } from "../lib/sounds";
 
-const thStyle = { padding: "12px 16px", textAlign: "left", fontSize: 11, color: "rgba(255,255,255,0.4)", letterSpacing: "1px", textTransform: "uppercase", borderBottom: "1px solid rgba(255,255,255,0.06)", fontWeight: 600 };
-const tdStyle = { padding: "13px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", fontSize: 13 };
+const thStyle = { padding: "12px 16px", textAlign: "left", fontSize: 10, color: "rgba(0,245,255,0.5)", letterSpacing: "1.5px", textTransform: "uppercase", borderBottom: "1px solid rgba(0,245,255,0.08)", fontWeight: 600, fontFamily: "monospace" };
+const tdStyle = { padding: "13px 16px", borderBottom: "1px solid rgba(0,245,255,0.05)", fontSize: 13 };
 
 const statusMap = {
   PENDING:   { bg: "rgba(245,158,11,0.15)", col: "#f59e0b", label: "Chờ xử lý" },

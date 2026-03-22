@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { getAllMissions, createMission, addExerciseToMission } from "../services/missionService";
 import { getAllExercises } from "../services/exerciseService";
 
-const darkInput = { width: "100%", padding: "11px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.07)", color: "#fff", fontSize: 13, outline: "none", boxSizing: "border-box" };
+const darkInput = { width: "100%", padding: "11px 14px", borderRadius: 10, border: "1px solid rgba(0,245,255,0.15)", background: "rgba(0,10,20,0.6)", color: "#fff", fontSize: 13, outline: "none", boxSizing: "border-box" };
 const darkSelect = { ...darkInput, background: "#1e293b", colorScheme: "dark" };
-const thStyle = { padding: "12px 16px", textAlign: "left", fontSize: 11, color: "rgba(255,255,255,0.4)", letterSpacing: "1px", textTransform: "uppercase", borderBottom: "1px solid rgba(255,255,255,0.06)", fontWeight: 600 };
-const tdStyle = { padding: "13px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", fontSize: 13 };
+const thStyle = { padding: "12px 16px", textAlign: "left", fontSize: 10, color: "rgba(0,245,255,0.5)", letterSpacing: "1.5px", textTransform: "uppercase", borderBottom: "1px solid rgba(0,245,255,0.08)", fontWeight: 600, fontFamily: "monospace" };
+const tdStyle = { padding: "13px 16px", borderBottom: "1px solid rgba(0,245,255,0.05)", fontSize: 13 };
 const levelMeta = { beginner: { bg: "rgba(16,185,129,0.18)", col: "#34d399" }, intermediate: { bg: "rgba(245,158,11,0.18)", col: "#f59e0b" }, advanced: { bg: "rgba(239,68,68,0.18)", col: "#f87171" } };
 const FG = ({ label, children }) => <div style={{ display: "grid", gap: 6 }}><label style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.5px" }}>{label}</label>{children}</div>;
 
@@ -165,29 +165,35 @@ export default function Missions() {
 
       {/* Modal Gán Bài Tập */}
       <DarkModal open={openAddEx} onClose={() => setOpenAddEx(false)} title="➕ Gán Bài Tập Cho Nhiệm Vụ" width={640}>
-        <div style={{ display: "grid", gap: 12 }}>
-          <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.4)" }}>Chọn các bài tập từ hệ thống và điểm thưởng tương ứng</p>
+        <div style={{ display: "grid", gap: 14 }}>
+          <p style={{ margin: 0, fontSize: 13, color: "rgba(0,245,255,0.5)", fontFamily: "monospace" }}>Chọn các bài tập từ hệ thống và điểm thưởng tương ứng</p>
           {formAddEx.map((row, i) => (
-            <div key={i} style={{ display: "flex", gap: 12, alignItems: "center", background: "rgba(255,255,255,0.04)", padding: 12, borderRadius: 10, border: "1px solid rgba(255,255,255,0.07)" }}>
+            <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-end", background: "rgba(0,245,255,0.03)", padding: 14, borderRadius: 12, border: "1px solid rgba(0,245,255,0.1)", transition: "border-color 0.2s" }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = "rgba(0,245,255,0.25)"}
+              onMouseLeave={e => e.currentTarget.style.borderColor = "rgba(0,245,255,0.1)"}>
               <div style={{ flex: 2 }}>
-                <label style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.4)", letterSpacing: "0.5px" }}>CHỌN BÀI TẬP</label>
-                <select style={{ ...darkInput, marginTop: 4 }} value={row.exercise_id} onChange={e => updateExForm(i, "exercise_id", e.target.value)}>
-                  <option value="">-- Chọn bài tập --</option>
-                  {exercises.map(ex => <option key={ex.id || ex._id} value={ex.id || ex._id}>{ex.title}</option>)}
+                <label style={{ fontSize: 10, fontWeight: 700, color: "rgba(0,245,255,0.5)", letterSpacing: "1px", fontFamily: "monospace", display: "block", marginBottom: 6 }}>CHỌN BÀI TẬP</label>
+                <select style={darkSelect} value={row.exercise_id} onChange={e => updateExForm(i, "exercise_id", e.target.value)}>
+                  <option value="" style={{ background: "#1e293b" }}>-- Chọn bài tập --</option>
+                  {exercises.map(ex => <option key={ex.id || ex._id} value={ex.id || ex._id} style={{ background: "#1e293b" }}>{ex.title}</option>)}
                 </select>
               </div>
               <div style={{ flex: 1 }}>
-                <label style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.4)", letterSpacing: "0.5px" }}>ĐIỂM THƯỞNG</label>
-                <input type="number" style={{ ...darkInput, marginTop: 4 }} value={row.point} onChange={e => updateExForm(i, "point", Number(e.target.value))} min={0} />
+                <label style={{ fontSize: 10, fontWeight: 700, color: "rgba(0,245,255,0.5)", letterSpacing: "1px", fontFamily: "monospace", display: "block", marginBottom: 6 }}>ĐIỂM THƯỞNG</label>
+                <input type="number" style={{ ...darkInput, colorScheme: "dark" }} value={row.point} onChange={e => updateExForm(i, "point", Number(e.target.value))} min={0} />
               </div>
-              <button onClick={() => removeExRow(i)} style={{ marginTop: 18, color: "#f87171", border: "none", background: "none", cursor: "pointer", fontWeight: 900, padding: "0 8px", fontSize: 18 }}>✕</button>
+              <button onClick={() => removeExRow(i)} style={{ color: "#f87171", border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.1)", cursor: "pointer", fontWeight: 900, padding: "8px 12px", fontSize: 14, borderRadius: 8, marginBottom: 1, transition: "all 0.15s" }}
+                onMouseEnter={e => e.currentTarget.style.background = "rgba(239,68,68,0.25)"}
+                onMouseLeave={e => e.currentTarget.style.background = "rgba(239,68,68,0.1)"}>✕</button>
             </div>
           ))}
-          <button onClick={addExRow} style={{ padding: "10px", borderRadius: 10, border: "1px dashed rgba(59,130,246,0.4)", background: "rgba(59,130,246,0.08)", color: "#60a5fa", cursor: "pointer", fontSize: 13, fontWeight: 700 }}>+ Gán thêm dòng bài tập</button>
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 4 }}>
-            <button onClick={() => setOpenAddEx(false)} disabled={isSubmittingEx} style={{ padding: "11px 20px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "rgba(255,255,255,0.6)", cursor: "pointer" }}>Hủy bỏ</button>
-            <button onClick={handleSaveAddEx} disabled={isSubmittingEx} style={{ padding: "11px 24px", borderRadius: 12, border: "none", background: "linear-gradient(135deg,#10b981,#059669)", color: "#fff", fontWeight: 700, cursor: "pointer", opacity: isSubmittingEx ? 0.7 : 1 }}>
-              {isSubmittingEx ? "Đang xử lý..." : "Xác nhận gán bài"}
+          <button onClick={addExRow} style={{ padding: "11px", borderRadius: 10, border: "1px dashed rgba(0,245,255,0.3)", background: "rgba(0,245,255,0.05)", color: "#00f5ff", cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: "monospace", letterSpacing: "0.5px", transition: "all 0.15s" }}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,245,255,0.1)"; e.currentTarget.style.borderColor = "rgba(0,245,255,0.5)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "rgba(0,245,255,0.05)"; e.currentTarget.style.borderColor = "rgba(0,245,255,0.3)"; }}>+ Gán thêm dòng bài tập</button>
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 6 }}>
+            <button onClick={() => setOpenAddEx(false)} disabled={isSubmittingEx} style={{ padding: "11px 20px", borderRadius: 12, border: "1px solid rgba(0,245,255,0.15)", background: "transparent", color: "rgba(0,245,255,0.5)", cursor: "pointer", fontFamily: "monospace", transition: "all 0.15s" }}>Hủy bỏ</button>
+            <button onClick={handleSaveAddEx} disabled={isSubmittingEx} style={{ padding: "11px 24px", borderRadius: 12, border: "none", background: "linear-gradient(135deg,#10b981,#059669)", color: "#fff", fontWeight: 700, cursor: "pointer", opacity: isSubmittingEx ? 0.7 : 1, boxShadow: "0 0 20px rgba(16,185,129,0.2)" }}>
+              {isSubmittingEx ? "Đang xử lý..." : "✓ Xác nhận gán bài"}
             </button>
           </div>
         </div>

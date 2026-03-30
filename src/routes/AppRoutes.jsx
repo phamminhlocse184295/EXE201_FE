@@ -32,18 +32,31 @@ const RoleBasedRedirect = () => {
 // ── Route guards ──────────────────────────────────────────────────────────────
 const AdminGuard = ({ children }) => {
   const user = getUser();
+  const role = (user?.role || "").toLowerCase();
+  console.log("🛡️ AdminGuard check:", { user, role, hasUser: !!user });
   if (!user) return <Navigate to="/login" replace />;
-  const role = (user.role || "").toLowerCase();
-  if (role !== "admin") return <Navigate to="/login" replace />;
+  if (role !== "admin") {
+    console.warn("❌ AdminGuard REJECTED - role is:", role);
+    return <Navigate to="/login" replace />;
+  }
+  console.log("✅ AdminGuard PASSED");
   return children;
 };
 
 const ManagerGuard = ({ children }) => {
   const user = getUser();
+  const role = (user?.role || "").toLowerCase();
+  console.log("🛡️ ManagerGuard check:", { user, role, hasUser: !!user });
   if (!user) return <Navigate to="/login" replace />;
-  const role = (user.role || "").toLowerCase();
-  // chỉ block role 'user' thông thường, còn lại (đã đăng nhập) đều vào được
-  if (role === "user") return <Navigate to="/login" replace />;
+  // Admin không được vào manager routes → redirect về trang admin
+  if (role === "admin") return <Navigate to="/admin/revenue" replace />;
+  // Chỉ manager, reviewer, annotator mới được vào
+  const allowed = ["manager", "reviewer", "annotator"];
+  if (!allowed.includes(role)) {
+    console.warn("❌ ManagerGuard REJECTED - role is:", role);
+    return <Navigate to="/login" replace />;
+  }
+  console.log("✅ ManagerGuard PASSED");
   return children;
 };
 

@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
-import { login } from "../services/auth";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { login, getProfile } from "../services/auth";
 import { motion } from "framer-motion";
 
 // Các hạt nổi trong nền
@@ -32,6 +33,7 @@ const particles = [
 ];
 
 export default function Login() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("trungloc@gmail.com");
   const [password, setPassword] = useState("123456");
   const [loading, setLoading] = useState(false);
@@ -44,60 +46,49 @@ export default function Login() {
     setLoading(true);
 
     try {
+      // Bước 1: Gọi login API → lấy token
       const res = await login({ email, password });
+      console.log("🌐 Login response:", res);
 
-      if (res.success || res.token || res.data?.token || res.access_token || res.data) {
-        // Lấy token từ mọi chỗ có thể
-        const token =
-          res?.token || res?.access_token ||
-          res?.data?.token || res?.data?.data?.token ||
-          localStorage.getItem("token");
+      if (!res?.success && !res?.token) {
+        setErr(res?.message || "Đăng nhập thất bại. Kiểm tra lại thông tin.");
+        setLoading(false);
+        return;
+      }
 
-        // Lấy user object từ response (thử nhiều cấu trúc)
-        let userFromRes =
-          res?.data?.data ||   // {data: {data: {...user...}}}
-          res?.data ||          // {data: {...user...}}
-          res?.user ||          // {user: {...}}
-          null;
-        if (Array.isArray(userFromRes)) userFromRes = userFromRes[0];
+      // Bước 2: Gọi getProfile() → lấy user + role thật từ database
+      // (login() đã lưu token vào localStorage, getProfile dùng token đó)
+      const profile = await getProfile();
+      console.log("👤 Profile from API:", profile);
 
-        // Đọc user đã có trong localStorage (nếu auth.js kịp lưu)
-        let storedUser = null;
-        try { storedUser = JSON.parse(localStorage.getItem("user") || "null"); } catch {}
+      if (!profile) {
+        setErr("Không lấy được thông tin tài khoản. Vui lòng thử lại.");
+        setLoading(false);
+        return;
+      }
 
-        // Merge để không mất trường nào
-        const mergedUser = { ...(storedUser || {}), ...(userFromRes || {}) };
+      // Lấy role từ profile (đã được getProfile lưu vào localStorage)
+      const role = (profile?.role || "").toLowerCase();
+      console.log("🎭 Role from profile:", role);
 
-        // Lấy role
-        let extractedRole =
-          mergedUser?.role ||
-          res?.role ||
-          "";
+      if (!role) {
+        setErr("Tài khoản chưa được phân quyền. Liên hệ admin.");
+        setLoading(false);
+        return;
+      }
 
-        // Decode JWT nếu vẫn chưa có role
-        if (!extractedRole && token) {
-          try {
-            const payload = JSON.parse(atob(token.split(".")[1]));
-            if (payload?.role) extractedRole = payload.role;
-          } catch {}
-        }
-
-        const finalRole = (extractedRole || "manager").toLowerCase();
-
-        // Luôn lưu user (dù rỗng cũng force lưu role)
-        localStorage.setItem("user", JSON.stringify({ ...mergedUser, role: finalRole }));
-        if (token) localStorage.setItem("token", token);
-
-        if (finalRole === "admin") {
-          window.location.href = "/admin/revenue";
-        } else {
-          window.location.href = "/manager/dashboard";
-        }
+      // Bước 3: Navigate theo role
+      console.log("✅ Login OK - Role:", role);
+      if (role === "admin") {
+        navigate("/admin/revenue", { replace: true });
+      } else if (["manager", "reviewer", "annotator"].includes(role)) {
+        navigate("/manager/dashboard", { replace: true });
       } else {
-        setErr(res.message || "Đăng nhập thất bại. Kiểm tra lại thông tin.");
+        setErr(`Role "${role}" không được hỗ trợ trong hệ thống.`);
       }
     } catch (error) {
-      setErr(error.response?.data?.message || "Kết nối server thất bại. Vui lòng thử lại sau.");
+      console.error("❌ Login error:", error);
+      setErr(error?.response?.data?.message || "Kết nối server thất bại. Vui lòng thử lại sau.");
     } finally {
       setLoading(false);
     }

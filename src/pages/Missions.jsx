@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { getAllMissions, createMission, addExerciseToMission } from "../services/missionService";
+import { useNavigate } from "react-router-dom";
+import { getAllMissions, createMission, addExerciseToMission, deleteMission, getMissionExercises } from "../services/missionService";
 import { getAllExercises } from "../services/exerciseService";
+import WeeklyMissionCreator from "../components/WeeklyMissionCreator";
 
 const darkInput = { width: "100%", padding: "11px 14px", borderRadius: 10, border: "1px solid rgba(0,245,255,0.15)", background: "rgba(0,10,20,0.6)", color: "#fff", fontSize: 13, outline: "none", boxSizing: "border-box" };
 const darkSelect = { ...darkInput, background: "#1e293b", colorScheme: "dark" };
@@ -25,6 +27,7 @@ function DarkModal({ open, onClose, title, width = 520, children }) {
 }
 
 export default function Missions() {
+  const navigate = useNavigate();
   const [missions, setMissions] = useState([]);
   const [exercises, setExercises] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -37,21 +40,78 @@ export default function Missions() {
   const [openAddEx, setOpenAddEx] = useState(false);
   const [isSubmittingEx, setIsSubmittingEx] = useState(false);
   const [formAddEx, setFormAddEx] = useState([{ exercise_id: "", point: 10 }]);
+  const [missionExercises, setMissionExercises] = useState({}); // Lưu exercises của từng mission
+  const [deleteMissionId, setDeleteMissionId] = useState(null); // State cho xóa mission
+  const [selectedMissions, setSelectedMissions] = useState(new Set()); // Chọn nhiều mission để xóa
 
   const fetchData = async () => {
+    console.log("🚀 Starting fetchData...");
     setLoading(true);
+    
     try {
+      // 1. Lấy tất cả missions (đã có mission_exercises trong response)
       const r = await getAllMissions(filterDate || undefined);
-      setMissions(Array.isArray(r) ? r : r.data || []);
+      console.log("🌐 Raw API response:", r);
+      
+      // Kiểm tra cấu trúc response
+      let missionsData = [];
+      if (r && r.data && Array.isArray(r.data.data)) {
+        missionsData = r.data.data;
+      } else if (r && r.data && Array.isArray(r.data)) {
+        missionsData = r.data;
+      } else if (Array.isArray(r)) {
+        missionsData = r;
+      }
+      
+      console.log("📋 Missions fetched:", missionsData);
+      console.log("🔍 First mission keys:", missionsData[0] ? Object.keys(missionsData[0]) : "No missions");
+      if (missionsData[0]) {
+        console.log("🔍 First mission object:", missionsData[0]);
+        console.log("🔍 mission_exercises value:", missionsData[0].mission_exercises);
+      }
+      setMissions(missionsData);
+      
+      // 2. Lấy exercises từ mission.mission_exercises (có sẵn trong data)
+      const exercisesMap = {};
+      console.log("🔄 Extracting exercises from missions...");
+      
+      for (const mission of missionsData) {
+        const missionId = mission.id || mission._id;
+        // Kiểm tra tất cả possible field names
+        const exercisesData = mission.mission_exercises || mission.exercises || mission.missionExercises || [];
+        exercisesMap[missionId] = exercisesData;
+        console.log(`✅ Mission ${missionId} has ${exercisesData.length} exercises from field:`, 
+          mission.mission_exercises ? "mission_exercises" : 
+          mission.exercises ? "exercises" : 
+          mission.missionExercises ? "missionExercises" : "none"
+        );
+      }
+      
+      console.log("📝 Final exercises map:", exercisesMap);
+      setMissionExercises(exercisesMap);
+      
     } catch (err) {
+      console.error("❌ Error fetching missions:", err);
       if (err?.response?.status === 403) alert("Thông báo: Tài khoản này không có quyền xem danh sách Nhiệm vụ.");
     }
+    
+    // 3. Lấy tất cả exercises cho modal gán bài tập
     try {
       const r = await getAllExercises();
+      console.log("🏋️ All exercises fetched:", r);
       setExercises(r.data?.data || r.data || r || []);
     } catch (err) {
-      if (err?.response?.status === 403) { try { const { default: api } = await import("../services/api"); const r2 = await api.get("/exercises/client"); setExercises(r2.data?.data || r2.data || r2 || []); } catch {} }
+      console.error("❌ Error fetching exercises:", err);
+      if (err?.response?.status === 403) { 
+        try { 
+          const { default: api } = await import("../services/api"); 
+          const r2 = await api.get("/exercises/client"); 
+          setExercises(r2.data?.data || r2.data || r2 || []); 
+        } catch {} 
+      }
     }
+    
+    console.log("✅ fetchData completed");
     setLoading(false);
   };
   useEffect(() => { fetchData(); }, [filterDate]);
@@ -73,8 +133,78 @@ export default function Missions() {
     if (formAddEx.find(r => !r.exercise_id)) return alert("Vui lòng chọn bài tập cho tất cả các dòng");
     if (!targetMissionId) return alert("Không tìm thấy Mission ID");
     setIsSubmittingEx(true);
-    try { await addExerciseToMission(targetMissionId, { exercises: formAddEx }); alert("Thêm bài tập thành công!"); setOpenAddEx(false); fetchData(); } catch { alert("Lỗi khi thêm bài tập."); }
+    console.log("➕ Adding exercises to mission:", targetMissionId);
+    console.log("📝 Exercise data:", formAddEx);
+    try { 
+      const res = await addExerciseToMission(targetMissionId, { exercises: formAddEx }); 
+      console.log("✅ Add exercise response:", res.data);
+      alert("Thêm bài tập thành công!"); 
+      setOpenAddEx(false); 
+      
+      // Force reload exercises cho mission vừa cập nhật
+      setTimeout(() => {
+        console.log("🔄 Force reloading exercises...");
+        fetchData();
+      }, 500);
+    } catch (error) {
+      console.error("❌ Add exercise error:", error);
+      alert("Lỗi khi thêm bài tập.");
+    }
     setIsSubmittingEx(false);
+  };
+
+  const handleDeleteMission = async (missionId) => {
+    if (!confirm("Bạn có chắc chắn muốn xóa nhiệm vụ này?")) return;
+    console.log("🗑️ Deleting mission:", missionId);
+    try {
+      const res = await deleteMission(missionId);
+      console.log("✅ Delete mission response:", res.data);
+      alert("Xóa nhiệm vụ thành công!");
+      fetchData();
+    } catch (error) {
+      console.error("❌ Delete mission error:", error);
+      alert("Lỗi khi xóa nhiệm vụ.");
+    }
+  };
+
+  const handleSelectMission = (missionId) => {
+    const newSelected = new Set(selectedMissions);
+    if (newSelected.has(missionId)) {
+      newSelected.delete(missionId);
+    } else {
+      newSelected.add(missionId);
+    }
+    setSelectedMissions(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedMissions.size === filtered.length) {
+      setSelectedMissions(new Set());
+    } else {
+      setSelectedMissions(new Set(filtered.map(m => m.id || m._id)));
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedMissions.size === 0) {
+      alert("Vui lòng chọn ít nhất một nhiệm vụ để xóa");
+      return;
+    }
+    
+    if (!confirm(`Bạn có chắc chắn muốn xóa ${selectedMissions.size} nhiệm vụ đã chọn?`)) return;
+    
+    try {
+      const deletePromises = Array.from(selectedMissions).map(missionId => 
+        deleteMission(missionId)
+      );
+      await Promise.all(deletePromises);
+      alert(`Đã xóa thành công ${selectedMissions.size} nhiệm vụ!`);
+      setSelectedMissions(new Set());
+      fetchData();
+    } catch (error) {
+      console.error("❌ Delete selected missions error:", error);
+      alert("Lỗi khi xóa các nhiệm vụ đã chọn.");
+    }
   };
 
   return (
@@ -85,6 +215,39 @@ export default function Missions() {
           <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, marginTop: 4 }}>Tìm thấy {filtered.length} nhiệm vụ</div>
         </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+          <WeeklyMissionCreator onRefresh={fetchData} />
+          <button
+            onClick={handleSelectAll}
+            style={{ 
+              padding: "8px 16px", 
+              borderRadius: 8, 
+              border: "1px solid rgba(168,85,247,0.4)", 
+              background: "rgba(168,85,247,0.1)", 
+              color: "#a855f7", 
+              cursor: "pointer", 
+              fontSize: 12, 
+              fontWeight: 700 
+            }}
+          >
+            {selectedMissions.size === filtered.length ? "☑️ Bỏ chọn tất cả" : "⬜ Chọn tất cả"}
+          </button>
+          {selectedMissions.size > 0 && (
+            <button
+              onClick={handleDeleteSelected}
+              style={{
+                padding: "8px 16px",
+                borderRadius: 8,
+                border: "1px solid rgba(239,68,68,0.4)",
+                background: "rgba(239,68,68,0.1)",
+                color: "#f87171",
+                cursor: "pointer",
+                fontSize: 12,
+                fontWeight: 700
+              }}
+            >
+              🗑️ Xóa {selectedMissions.size} đã chọn
+            </button>
+          )}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <label style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.4)", letterSpacing: "0.5px" }}>LỌC NGÀY</label>
             <input type="date" style={{ ...darkInput, width: 150 }} value={filterDate} onChange={e => setFilterDate(e.target.value)} />
@@ -103,32 +266,105 @@ export default function Missions() {
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ background: "rgba(255,255,255,0.03)" }}>
-                  <th style={thStyle}>Tên Nhiệm Vụ</th>
-                  <th style={thStyle}>Mức Độ</th>
-                  <th style={thStyle}>Ngày Chạy</th>
-                  <th style={{ ...thStyle, textAlign: "right" }}>Thao Tác</th>
+                  <th style={{ ...thStyle, width: "40px", textAlign: "center" }}>
+                        <input
+                          type="checkbox"
+                          checked={selectedMissions.size === filtered.length && filtered.length > 0}
+                          onChange={handleSelectAll}
+                          style={{ cursor: "pointer" }}
+                        />
+                      </th>
+                      <th style={thStyle}>Tên Nhiệm Vụ</th>
+                      <th style={thStyle}>Mức Độ</th>
+                      <th style={thStyle}>Ngày Chạy</th>
+                      <th style={thStyle}>Bài Tập</th>
+                      <th style={{ ...thStyle, textAlign: "right" }}>Thao Tác</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map(m => {
+                  console.log("🔴 Rendering mission:", m.id || m._id, "mission_exercises:", m.mission_exercises);
                   const lvl = levelMeta[(m.level || "beginner").toLowerCase()] || levelMeta.beginner;
                   return (
                     <tr key={m.id || m._id} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.04)"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                      <td style={{ ...tdStyle, textAlign: "center" }}>
+                        <input
+                          type="checkbox"
+                          checked={selectedMissions.has(m.id || m._id)}
+                          onChange={() => handleSelectMission(m.id || m._id)}
+                          style={{ cursor: "pointer" }}
+                        />
+                      </td>
                       <td style={tdStyle}>
                         <div style={{ fontWeight: 700, color: "#fff" }}>{m.title}</div>
                         <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", maxWidth: 350, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.description}</div>
                       </td>
                       <td style={tdStyle}><span style={{ padding: "3px 10px", borderRadius: 999, fontSize: 11, background: lvl.bg, color: lvl.col, fontWeight: 700, textTransform: "capitalize" }}>{m.level || "Beginner"}</span></td>
                       <td style={{ ...tdStyle, color: "#60a5fa", fontWeight: 700 }}>{m.target_date || "N/A"}</td>
+                      <td style={tdStyle}>
+                        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)" }}>
+                          {(() => {
+                            const exercises = m.mission_exercises || [];
+                            console.log(`🔍 Display check for mission ${m.id || m._id}:`, exercises);
+                            return exercises.length > 0 ? 
+                              `${exercises.length} bài tập` : 
+                              "Chưa gán";
+                          })()}
+                        </div>
+                        {(() => {
+                          const exercises = m.mission_exercises || [];
+                          if (exercises.length > 0) {
+                            const totalPoints = exercises.reduce((sum, ex) => sum + (ex.point || 0), 0);
+                            console.log(`💰 Points for mission ${m.id || m._id}:`, totalPoints);
+                            return (
+                              <div style={{ fontSize: 11, color: "#34d399", marginTop: 2 }}>
+                                +{totalPoints} điểm
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
+                      </td>
                       <td style={{ ...tdStyle, textAlign: "right" }}>
-                        <button onClick={() => handleOpenAddEx(m.id || m._id)} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid rgba(16,185,129,0.4)", background: "rgba(16,185,129,0.1)", color: "#34d399", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
+                        <button onClick={() => navigate(`/manager/missions/${m.id || m._id}`)} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid rgba(59,130,246,0.4)", background: "rgba(59,130,246,0.1)", color: "#3b82f6", cursor: "pointer", fontSize: 12, fontWeight: 700, marginRight: 6 }}>
+                          👁️ Xem
+                        </button>
+                        <button 
+                          onClick={() => handleOpenAddEx(m.id || m._id)} 
+                          style={{ 
+                            padding: "7px 14px", 
+                            borderRadius: 8, 
+                            border: "1px solid rgba(16,185,129,0.4)", 
+                            background: "rgba(16,185,129,0.1)", 
+                            color: "#34d399", 
+                            cursor: "pointer", 
+                            fontSize: 12, 
+                            fontWeight: 700,
+                            marginRight: 6
+                          }}
+                        >
                           + Gán Bài Tập
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteMission(m.id || m._id)}
+                          style={{
+                            padding: "7px 14px",
+                            borderRadius: 8,
+                            border: "1px solid rgba(239,68,68,0.4)",
+                            background: "rgba(239,68,68,0.1)",
+                            color: "#f87171",
+                            cursor: "pointer",
+                            fontSize: 12,
+                            fontWeight: 700
+                          }}
+                        >
+                          🗑️ Xóa
                         </button>
                       </td>
                     </tr>
                   );
                 })}
-                {filtered.length === 0 && <tr><td colSpan={4} style={{ textAlign: "center", padding: 40, color: "rgba(255,255,255,0.2)" }}>Không tìm thấy nhiệm vụ nào. {filterDate && "Thử bỏ lọc theo ngày."}</td></tr>}
+                {filtered.length === 0 && <tr><td colSpan={7} style={{ textAlign: "center", padding: 40, color: "rgba(255,255,255,0.2)" }}>Không tìm thấy nhiệm vụ nào. {filterDate && "Thử bỏ lọc theo ngày."}</td></tr>}
               </tbody>
             </table>
           </div>
@@ -198,6 +434,7 @@ export default function Missions() {
           </div>
         </div>
       </DarkModal>
+
     </div>
   );
 }

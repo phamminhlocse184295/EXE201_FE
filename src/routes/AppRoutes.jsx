@@ -16,6 +16,7 @@ import Transactions from "../pages/Transactions";
 import Login from "../pages/Login";
 import AiAssistant from "../pages/AiAssistant";
 import Missions from "../pages/Missions";
+import MissionDetail from "../pages/MissionDetail";
 
 // ── Role-based redirect after login ───────────────────────────────────────────
 const RoleBasedRedirect = () => {
@@ -82,6 +83,7 @@ export default function AppRoutes() {
         <Route path="exercises" element={<Exercises />} />
         <Route path="courses" element={<Courses />} />
         <Route path="missions" element={<Missions />} />
+        <Route path="missions/:id" element={<MissionDetail />} />
         <Route path="profile" element={<Profile />} />
         <Route path="ai" element={<AiAssistant />} />
       </Route>

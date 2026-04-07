@@ -27,13 +27,97 @@ const WeeklyMissionCreator = ({ onRefresh }) => {
       const today = new Date();
       
       const missionTemplates = [
-        { title: "Ngày 1: Khởi động cơ bản", description: "Các bài tập khởi động nhẹ nhàng", level: "beginner", keywords: ["khởi động", "warm up", "năng lượng"] },
-        { title: "Ngày 2: Tăng sức mạnh", description: "Bài tập xây dựng sức mạnh", level: "intermediate", keywords: ["sức mạnh", "strength", "power"] },
-        { title: "Ngày 3: Dãn cơ linh hoạt", description: "Tăng sự linh hoạt và dãn cơ", level: "beginner", keywords: ["dãn cơ", "flexibility", "stretching"] },
-        { title: "Ngày 4: Cardio", description: "Bài tập tim mạch", level: "intermediate", keywords: ["cardio", "tim mạch", "nhịp tim"] },
-        { title: "Ngày 5: Cơ lõi", description: "Tập trung vào cơ lõi", level: "intermediate", keywords: ["cơ lõi", "core", "bụng"] },
-        { title: "Ngày 6: Thư giãn", description: "Các bài tập thư giãn nhẹ nhàng", level: "beginner", keywords: ["thư giãn", "relax", "yoga"] },
-        { title: "Ngày 7: Phục hồi", description: "Bài tập phục hồi cơ thể", level: "beginner", keywords: ["phục hồi", "recovery", "massage"] }
+        { 
+          title: "Thứ 2: Khởi động cơ bản", 
+          description: "Khởi động nhẹ nhàng đánh thức cơ thể, sẵn sàng năng lượng cho tuần mới.", 
+          level: "beginner", 
+          stations: [
+            ["vươn vai", "giường", "ngửa", "khởi động"], 
+            ["nhón gót", "chân", "đứng"],
+            ["cổ tay", "xoay vai", "nhún"],
+            ["nghiêng lườn", "căng ngực", "cửa"],
+            ["vươn tay", "tay sau", "kéo"],
+            ["vặn cột sống", "vặn", "ngủ"]
+          ] 
+        },
+        { 
+          title: "Thứ 3: Tập trung cổ - vai", 
+          description: "Giải phóng áp lực vùng cổ vai sau những giờ 'cày' deadline.", 
+          level: "intermediate", 
+          stations: [
+            ["mở sách", "nghiêng", "vai"], 
+            ["cơ cổ", "gập cằm", "cổ"],
+            ["căng vai", "sau gáy", "ngực"],
+            ["đẩy ngực", "sau lưng", "nâng tay"],
+            ["xoay vai", "nhún vai", "tay sau"],
+            ["luồn kim", "giường", "ngủ"]
+          ] 
+        },
+        { 
+          title: "Thứ 4: Giải cứu lưng - hông", 
+          description: "Bảo trì cột sống và thắt lưng, chống 'thoát vị' cho dân văn phòng.", 
+          level: "intermediate", 
+          stations: [
+            ["mèo bò", "mèo", "bò", "lưng"], 
+            ["lắc hông", "nhón gót", "tròn"],
+            ["vặn mình", "ghế", "xoay"],
+            ["ngả lưng", "chống tay", "đứng"],
+            ["số 4", "vắt chéo", "mông", "hông"],
+            ["em bé", "child", "quỳ"]
+          ] 
+        },
+        { 
+          title: "Thứ 5: Giãn cơ chân & Máu oxy", 
+          description: "Giảm tê bì chân và giúp máu lưu thông về tim tốt hơn.", 
+          level: "beginner", 
+          stations: [
+            ["xoay khớp háng", "gối", "háng"], 
+            ["nhón gót", "chân", "đứng"],
+            ["duỗi chân", "gập mũi chân", "đùi sau"],
+            ["đùi trước", "gót", "cổ chân"],
+            ["bắp chân", "ép tường", "tường"],
+            ["gác chân", "số 4", "ngửa", "tường"]
+          ] 
+        },
+        { 
+          title: "Thứ 6: Xả stress toàn thân", 
+          description: "Reset lại hệ thống thần kinh và cơ bắp để đón cuối tuần rực rỡ.", 
+          level: "beginner", 
+          stations: [
+            ["vươn vai", "hít sâu", "lăn lưng"], 
+            ["cổ", "hướng", "đầu"],
+            ["hít thở", "thở", "hộp"],
+            ["lắc hông", "rũ tay", "thả lỏng"],
+            ["ragdoll", "gập người", "tay"],
+            ["savasana", "thả lỏng", "ngủ"]
+          ] 
+        },
+        { 
+          title: "Thứ 7: Ngày linh hoạt & dọn dẹp", 
+          description: "Khởi động và làm nóng các khớp cho một ngày cuối tuần năng động.", 
+          level: "intermediate", 
+          stations: [
+            ["vươn vai", "vặn", "lưng"], 
+            ["xoay khớp", "cổ", "gối"],
+            ["mèo bò", "em bé", "lưng"],
+            ["bươm bướm", "butterfly", "số 4"],
+            ["đùi", "căng trước", "chân"],
+            ["gác chân", "số 4", "ngủ"]
+          ] 
+        },
+        { 
+          title: "Chủ nhật: Ngày phục hồi sâu", 
+          description: "Phục hồi toàn bộ cơ thể, sẵn sàng cho tuần mới.", 
+          level: "beginner", 
+          stations: [
+            ["vươn vai", "hít thở", "sâu"], 
+            ["nghiêng lườn", "ngực", "tay"],
+            ["hít thở", "cổ", "hướng"],
+            ["cổ tay", "bả vai", "xoay"],
+            ["gập người", "duỗi chân", "vặn"],
+            ["tường", "savasana", "thả lỏng"]
+          ] 
+        }
       ];
       
       let successCount = 0;
@@ -50,27 +134,37 @@ const WeeklyMissionCreator = ({ onRefresh }) => {
         console.log(`🎯 Tạo mission ${i + 1}: ${template.title} cho ngày ${targetDateStr}`);
         
         try {
-          // Tìm 1 exercise phù hợp
-          let selectedExercise = null;
+          // Lấy tối đa 6 exercises phù hợp (tương ứng 6 trạm)
+          let assignedExercises = [];
           
-          // Thử tìm exercise theo keywords
-          for (const keyword of template.keywords) {
-            const found = allExercises.find(ex => 
-              (ex.title && ex.title.toLowerCase().includes(keyword.toLowerCase())) ||
-              (ex.description && ex.description.toLowerCase().includes(keyword.toLowerCase()))
-            );
+          for (const stationKeywords of template.stations) {
+            let found = null;
+            
+            // Thử tìm bài tập theo từ khóa của trạm này
+            for (const kw of stationKeywords) {
+              found = allExercises.find(ex => 
+                !assignedExercises.some(a => a.exercise_id === (ex.id || ex._id)) &&
+                ((ex.title && ex.title.toLowerCase().includes(kw.toLowerCase())) ||
+                 (ex.description && ex.description.toLowerCase().includes(kw.toLowerCase())))
+              );
+              if (found) break;
+            }
+            
+            // Nếu không tìm thấy, lấy 1 bài chưa được gán bất kỳ
+            if (!found) {
+              found = allExercises.find(ex => !assignedExercises.some(a => a.exercise_id === (ex.id || ex._id)));
+            }
+            
+            // Nếu tìm thấy thì thêm vào assignedExercises
             if (found) {
-              selectedExercise = found;
-              break; // Chỉ cần 1 exercise
+              assignedExercises.push({
+                exercise_id: found.id || found._id,
+                point: 10
+              });
             }
           }
           
-          // Nếu không tìm thấy theo keywords, lấy exercise đầu tiên
-          if (!selectedExercise && allExercises.length > 0) {
-            selectedExercise = allExercises[0];
-          }
-          
-          console.log(`🏋️ Selected exercise for ${template.title}:`, selectedExercise);
+          console.log(`🏋️ Selected ${assignedExercises.length} exercises for ${template.title}:`, assignedExercises);
           
           // Tạo mission
           const missionRes = await createMission({
@@ -91,18 +185,13 @@ const WeeklyMissionCreator = ({ onRefresh }) => {
           console.log("🆔 Mission ID:", missionId);
           console.log(`✅ Đã tạo mission ${template.title}`);
           
-          // Thêm exercise vào mission (nếu có)
-          if (selectedExercise) {
-            const exerciseAssignment = {
-              exercise_id: selectedExercise.id || selectedExercise._id,
-              point: 10
-            };
+          // Thêm exercises vào mission (nếu có)
+          if (assignedExercises.length > 0) {
+            console.log("📝 Exercise assignment bulk:", assignedExercises);
             
-            console.log("📝 Exercise assignment:", exerciseAssignment);
-            
-            const addExRes = await addExerciseToMission(missionId, { exercises: [exerciseAssignment] });
-            console.log("✅ Add exercise response:", addExRes.data);
-            console.log(`✅ Đã gán exercise cho mission ${template.title}`);
+            const addExRes = await addExerciseToMission(missionId, { exercises: assignedExercises });
+            console.log("✅ Add exercise bulk response:", addExRes.data);
+            console.log(`✅ Đã gán ${assignedExercises.length} bài tập cho mission ${template.title}`);
             
             // Đợi 0.5 giây để backend xử lý xong
             await new Promise(resolve => setTimeout(resolve, 500));

@@ -64,12 +64,19 @@ export default function Exercises() {
   const openCreate = () => { setEditing(null); setForm({ title: "", description: "", duration: 60, video_url: "", exercise_type: "free", target_muscle: "", img_list: "" }); setOpen(true); };
   const openEdit = ex => {
     setEditing(ex);
-    setForm({ title: ex.title || "", description: ex.description || "", duration: ex.duration || ex.duration_seconds || 0, video_url: ex.video_url || "", exercise_type: ex.exercise_type || "free", target_muscle: Array.isArray(ex.target_muscle) ? ex.target_muscle.join(", ") : ex.target_muscle || "", img_list: Array.isArray(ex.img_list) && ex.img_list.length > 0 ? ex.img_list[0] : ex.img_list || "" });
+    setForm({ title: ex.title || "", description: ex.description || "", duration: ex.duration || ex.duration_seconds || 0, video_url: Array.isArray(ex.video_url) ? ex.video_url.join(", ") : ex.video_url || "", exercise_type: ex.exercise_type || "free", target_muscle: Array.isArray(ex.target_muscle) ? ex.target_muscle.join(", ") : ex.target_muscle || "", img_list: Array.isArray(ex.img_list) && ex.img_list.length > 0 ? ex.img_list[0] : ex.img_list || "" });
     setOpen(true);
   };
   const save = async () => {
     if (!form.title.trim()) return alert("Tên bài tập là bắt buộc");
-    const payload = { title: form.title.trim(), description: form.description || "", video_url: form.video_url || "", duration: Number(form.duration) || 0, target_muscle: form.target_muscle ? form.target_muscle.split(",").map(s => s.trim()).filter(Boolean) : [], img_list: form.img_list?.trim() ? [form.img_list.trim()] : [] };
+    const payload = { 
+      title: form.title.trim(), 
+      description: form.description || "", 
+      video_url: form.video_url ? form.video_url.split(",").map(s => s.trim()).filter(Boolean) : [], 
+      duration: Number(form.duration) || 0, 
+      target_muscle: form.target_muscle ? form.target_muscle.split(",").map(s => s.trim()).filter(Boolean) : [], 
+      img_list: form.img_list?.trim() ? [form.img_list.trim()] : [] 
+    };
     try {
       if (editing) { const id = editing.id || editing._id || editing.exercise_id; if (!id) return alert("Lỗi: Không tìm thấy ID!"); await updateExercise(id, payload); alert("Cập nhật thành công!"); }
       else { await createExercise(payload); alert("Thêm bài tập thành công!"); }
@@ -133,6 +140,7 @@ export default function Exercises() {
                   const type = ex.exercise_type || "free";
                   const isMember = type.toLowerCase() === "member";
                   const muscles = Array.isArray(ex.target_muscle) ? ex.target_muscle : [];
+                  const vids = Array.isArray(ex.video_url) ? ex.video_url : (ex.video_url ? [ex.video_url] : []);
                   return (
                     <tr key={id || i} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.04)"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                       <td style={tdStyle}>
@@ -143,7 +151,11 @@ export default function Exercises() {
                             {muscles.map((m, idx) => <span key={idx} style={{ background: "rgba(16,185,129,0.15)", color: "#34d399", fontSize: 10, padding: "2px 8px", borderRadius: 4, fontWeight: 600 }}>{m}</span>)}
                           </div>
                         )}
-                        {ex.video_url && <a href={ex.video_url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "#60a5fa", marginTop: 4, display: "inline-block" }}>Watch Video ↗</a>}
+                        {vids.length > 0 && (
+                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
+                            {vids.map((v, idx) => <a key={idx} href={v} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "#60a5fa" }}>Video {idx + 1} ↗</a>)}
+                          </div>
+                        )}
                       </td>
                       <td style={{ ...tdStyle, maxWidth: 250, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "rgba(255,255,255,0.5)" }}>{ex.description || "---"}</td>
                       <td style={tdStyle}><span style={{ color: "#f59e0b", fontWeight: 700 }}>{ex.duration || ex.duration_seconds || 0}s</span></td>
@@ -180,7 +192,7 @@ export default function Exercises() {
             <FG label="Loại (Type)"><select style={darkInput} value={form.exercise_type} onChange={e => setForm({ ...form, exercise_type: e.target.value })}><option value="free">Miễn phí (Free)</option><option value="member">Hội viên (Member)</option></select></FG>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <FG label="Video URL"><input style={darkInput} value={form.video_url} onChange={e => setForm({ ...form, video_url: e.target.value })} placeholder="http://youtube.com/..." /></FG>
+            <FG label="Video URLs (cách nhau bằng phẩy)"><input style={darkInput} value={form.video_url} onChange={e => setForm({ ...form, video_url: e.target.value })} placeholder="http://youtube.com/a, http://youtube.com/b..." /></FG>
             <FG label="Link ảnh minh hoạ"><input style={darkInput} value={form.img_list} onChange={e => setForm({ ...form, img_list: e.target.value })} placeholder="https://i.ytimg.com/..." /></FG>
           </div>
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 4 }}>

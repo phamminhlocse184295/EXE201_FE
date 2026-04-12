@@ -81,7 +81,7 @@ export default function ChibiSkeleton3D({ boneColor = "#ebe4d8", jointColor = "#
   });
 
   return (
-    <group ref={root} scale={0.36}>
+    <group ref={root} scale={0.12}>
       <mesh position={[0, 0.52, 0]}>
         <sphereGeometry args={[0.48, 28, 28]} />
         <meshToonMaterial {...matProps} />

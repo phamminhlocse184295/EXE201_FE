@@ -411,7 +411,11 @@ export default function Missions() {
                 <label style={{ fontSize: 10, fontWeight: 700, color: "rgba(0,245,255,0.5)", letterSpacing: "1px", fontFamily: "monospace", display: "block", marginBottom: 6 }}>CHỌN BÀI TẬP</label>
                 <select style={darkSelect} value={row.exercise_id} onChange={e => updateExForm(i, "exercise_id", e.target.value)}>
                   <option value="" style={{ background: "#1e293b" }}>-- Chọn bài tập --</option>
-                  {exercises.map(ex => <option key={ex.id || ex._id} value={ex.id || ex._id} style={{ background: "#1e293b" }}>{ex.title}</option>)}
+                  {exercises.filter(ex => ex.type === "relaxation").map(ex => (
+                    <option key={ex.id || ex._id} value={ex.id || ex._id} style={{ background: "#1e293b" }}>
+                      {ex.title} ({ex.duration || ex.duration_seconds || 0}s)
+                    </option>
+                  ))}
                 </select>
               </div>
               <div style={{ flex: 1 }}>

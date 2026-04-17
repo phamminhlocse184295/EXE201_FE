@@ -668,12 +668,23 @@ export default function Exercises() {
 
                   <div style={{ display: "flex", gap: 4 }}>
 
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-
-                      <button key={page} onClick={() => setCurrentPage(page)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)", background: currentPage === page ? "linear-gradient(135deg,#3b82f6,#6366f1)" : "rgba(255,255,255,0.08)", color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 600, minWidth: 36 }}>{page}</button>
-
-                    ))}
-
+                    {currentPage > 3 && (
+                      <button onClick={() => setCurrentPage(1)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.08)", color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 600, minWidth: 36 }}>1</button>
+                    )}
+                    {currentPage > 3 && (
+                      <span style={{ padding: "8px 14px", color: "rgba(255,255,255,0.4)", fontSize: 12 }}>...</span>
+                    )}
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(page => page >= Math.max(1, currentPage - 2) && page <= Math.min(totalPages, currentPage + 2))
+                      .map(page => (
+                        <button key={page} onClick={() => setCurrentPage(page)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)", background: currentPage === page ? "linear-gradient(135deg,#3b82f6,#6366f1)" : "rgba(255,255,255,0.08)", color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 600, minWidth: 36 }}>{page}</button>
+                      ))}
+                    {currentPage < totalPages - 2 && (
+                      <span style={{ padding: "8px 14px", color: "rgba(255,255,255,0.4)", fontSize: 12 }}>...</span>
+                    )}
+                    {currentPage < totalPages - 2 && (
+                      <button onClick={() => setCurrentPage(totalPages)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.08)", color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 600, minWidth: 36 }}>{totalPages}</button>
+                    )}
                   </div>
 
                   <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)", background: currentPage === totalPages ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.08)", color: currentPage === totalPages ? "rgba(255,255,255,0.3)" : "#fff", cursor: currentPage === totalPages ? "not-allowed" : "pointer", fontSize: 12, fontWeight: 600 }}>Tiếp →</button>
